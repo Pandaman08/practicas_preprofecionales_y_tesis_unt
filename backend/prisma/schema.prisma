@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  ESTUDIANTE
+  ASESOR
+  EMPRESA
+  COORDINADOR
+}
+
+enum EstadoPractica {
+  PENDIENTE
+  EN_CURSO
+  COMPLETADA
+  CANCELADA
+}
+
+enum EstadoTesis {
+  PROPUESTA
+  APROBADA
+  EN_DESARROLLO
+  LISTA_SUSTENTACION
+  SUSTENTADA
+  OBSERVADA
+}
+
+enum EstadoPostulacion {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+enum EstadoConvenio {
+  ACTIVO
+  VENCIDO
+  EN_RENOVACION
+}
+
+enum TipoTesis {
+  TESIS
+  TRABAJO_SUFICIENCIA
+  PROYECTO_INVESTIGACION
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  rol          Rol      @default(ESTUDIANTE)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  estudiante   Estudiante?
+  asesor       Asesor?
+  empresa      Empresa?
+
+  @@map("usuarios")
+}
+
+model Estudiante {
+  id               Int      @id @default(autoincrement())
+  usuarioId        Int      @unique
+  codigo           String   @unique
+  nombres          String
+  apellidos        String
+  dni              String   @unique
+  telefono         String?
+  direccion        String?
+  ciclo            Int
+  especialidad     String
+  cv               String?
+  foto             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  usuario          Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  practicas        Practica[]
+  tesis            Tesis[]
+  postulaciones    Postulacion[]
+
+  @@map("estudiantes")
+}
+
+model Asesor {
+  id           Int      @id @default(autoincrement())
+  usuarioId    Int      @unique
+  nombres      String
+  apellidos    String
+  dni          String   @unique
+  telefono     String?
+  especialidad String
+  grado        String
+  foto         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  practicas    Practica[]
+  tesis        Tesis[]
+
+  @@map("asesores")
+}
+
+model Empresa {
+  id             Int      @id @default(autoincrement())
+  usuarioId      Int      @unique
+  razonSocial    String
+  ruc            String   @unique
+  direccion      String?
+  telefono       String?
+  sector         String?
+  contactoNombre String?
+  contactoEmail  String?
+  logo           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  ofertas        Oferta[]
+  convenios      Convenio[]
+  practicas      Practica[]
+
+  @@map("empresas")
+}
+
+model Convenio {
+  id           Int            @id @default(autoincrement())
+  empresaId    Int
+  numero       String         @unique
+  fechaInicio  DateTime
+  fechaFin     DateTime
+  estado       EstadoConvenio @default(ACTIVO)
+  documento    String?
+  observaciones String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  empresa      Empresa        @relation(fields: [empresaId], references: [id])
+
+  @@map("convenios")
+}
+
+model Oferta {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int
+  titulo          String
+  descripcion     String
+  requisitos      String?
+  beneficios      String?
+  horario         String?
+  modalidad       String   @default("presencial")
+  vacantes        Int      @default(1)
+  fechaLimite     DateTime?
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+  postulaciones   Postulacion[]
+
+  @@map("ofertas")
+}
+
+model Postulacion {
+  id           Int               @id @default(autoincrement())
+  estudianteId Int
+  ofertaId     Int
+  estado       EstadoPostulacion @default(PENDIENTE)
+  cartaMotivacion String?
+  fechaPostulacion DateTime      @default(now())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id])
+  oferta       Oferta     @relation(fields: [ofertaId], references: [id])
+
+  @@unique([estudianteId, ofertaId])
+  @@map("postulaciones")
+}
+
+model Practica {
+  id              Int            @id @default(autoincrement())
+  estudianteId    Int
+  asesorId        Int?
+  empresaId       Int
+  ofertaId        Int?
+  titulo          String
+  descripcion     String?
+  fechaInicio     DateTime
+  fechaFin        DateTime?
+  horasTotales    Int            @default(0)
+  estado          EstadoPractica @default(PENDIENTE)
+  cartaAceptacion String?
+  informeFinal    String?
+  notaFinal       Float?
+  observaciones   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  estudiante      Estudiante     @relation(fields: [estudianteId], references: [id])
+  asesor          Asesor?        @relation(fields: [asesorId], references: [id])
+  empresa         Empresa        @relation(fields: [empresaId], references: [id])
+  seguimientos    Seguimiento[]
+
+  @@map("practicas")
+}
+
+model Seguimiento {
+  id           Int      @id @default(autoincrement())
+  practicaId   Int
+  fecha        DateTime @default(now())
+  actividades  String
+  horasEjecutadas Int   @default(0)
+  observaciones String?
+  archivoUrl   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  practica     Practica @relation(fields: [practicaId], references: [id], onDelete: Cascade)
+
+  @@map("seguimientos")
+}
+
+model Tesis {
+  id              Int         @id @default(autoincrement())
+  estudianteId    Int
+  asesorId        Int?
+  titulo          String
+  tipo            TipoTesis   @default(TESIS)
+  area            String?
+  resumen         String?
+  estado          EstadoTesis @default(PROPUESTA)
+  fechaInicio     DateTime?
+  fechaSustentacion DateTime?
+  notaFinal       Float?
+  documentoFinal  String?
+  observaciones   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  estudiante      Estudiante  @relation(fields: [estudianteId], references: [id])
+  asesor          Asesor?     @relation(fields: [asesorId], references: [id])
+  avances         AvanceTesis[]
+
+  @@map("tesis")
+}
+
+model AvanceTesis {
+  id           Int      @id @default(autoincrement())
+  tesisId      Int
+  capitulo     String
+  descripcion  String
+  porcentaje   Int      @default(0)
+  archivoUrl   String?
+  observaciones String?
+  fecha        DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tesis        Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+
+  @@map("avances_tesis")
+}
