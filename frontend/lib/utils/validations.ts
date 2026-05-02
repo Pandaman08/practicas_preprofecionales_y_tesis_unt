@@ -25,6 +25,7 @@ export const ofertaSchema = z.object({
   vacantes: z.number().min(1),
   fechaLimite: z.string().min(1, 'Fecha límite requerida'),
   remuneracion: z.number().optional(),
+  empresaId: z.number().min(1, 'Selecciona una empresa'),
 });
 
 export const tesisSchema = z.object({
