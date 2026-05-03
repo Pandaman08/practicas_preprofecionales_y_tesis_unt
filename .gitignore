@@ -8,7 +8,7 @@ node_modules/
 # testing
 /coverage
 
-# next.js
+# next.js (frontend)
 /.next/
 /out/
 
@@ -31,6 +31,53 @@ yarn-error.log*
 # vercel
 .vercel
 
-# typescript
+# typescript general
 *.tsbuildinfo
 next-env.d.ts
+
+# ========================
+# BACKEND (NestJS)
+# ========================
+backend/dist/
+backend/**/*.js
+backend/**/*.d.ts
+backend/**/*.js.map
+!backend/**/*.spec.js  # Excepto archivos de prueba si los tienes
+!backend/**/*.e2e.js
+
+# ========================
+# FRONTEND (Next.js)
+# ========================
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# ========================
+# Archivos del sistema
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+*.log
+
+# ========================
+# Package locks (opcional - descomenta si NO quieres versionarlos)
+# ========================
+# backend/package-lock.json
+# frontend/package-lock.json
+# package-lock.json
+
+# ========================
+# IDE y editores
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
