@@ -21,18 +21,20 @@ export class OfertasController {
   @Get()
   @ApiOperation({ summary: 'Listar ofertas activas' })
   findAll(
+    @CurrentUser() user: any,
     @Query('empresaId') empresaId?: string,
+    @Query('activo') activo?: string,
     @Query('modalidad') modalidad?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.ofertasService.findAll({
       empresaId: empresaId ? +empresaId : undefined,
-      activo: true,
+      activo: activo !== undefined ? activo === 'true' : (user?.rol === Rol.EMPRESA ? undefined : true),
       modalidad,
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
-    });
+    }, user);
   }
 
   @Get(':id')
@@ -42,24 +44,24 @@ export class OfertasController {
   }
 
   @Post()
-  @Roles(Rol.EMPRESA, Rol.ADMIN, Rol.COORDINADOR)
+  @Roles(Rol.EMPRESA, Rol.ADMIN)
   @ApiOperation({ summary: 'Crear nueva oferta' })
   create(@Body() body: any, @CurrentUser() user: any) {
-    return this.ofertasService.create(body);
+    return this.ofertasService.create(body, user);
   }
 
   @Put(':id')
-  @Roles(Rol.EMPRESA, Rol.ADMIN, Rol.COORDINADOR)
+  @Roles(Rol.EMPRESA, Rol.ADMIN)
   @ApiOperation({ summary: 'Actualizar oferta' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.ofertasService.update(id, body);
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.ofertasService.update(id, body, user);
   }
 
   @Delete(':id')
   @Roles(Rol.EMPRESA, Rol.ADMIN)
   @ApiOperation({ summary: 'Desactivar oferta' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.ofertasService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.ofertasService.remove(id, user);
   }
 
   // --- Postulaciones ---
@@ -71,23 +73,21 @@ export class OfertasController {
     @CurrentUser() user: any,
     @Body() body: any,
   ) {
-    const estudiante = await this.postulacionesService['prisma'].estudiante.findUnique({
-      where: { usuarioId: user.id },
-    });
-    return this.postulacionesService.postular(estudiante.id, ofertaId, body.cartaMotivacion);
+    const estudianteId = await this.postulacionesService.getEstudianteIdByUsuario(user.id);
+    return this.postulacionesService.postular(estudianteId, ofertaId, body.cartaMotivacion);
   }
 
   @Get(':id/postulaciones')
   @Roles(Rol.EMPRESA, Rol.ADMIN, Rol.COORDINADOR)
   @ApiOperation({ summary: 'Ver postulaciones de una oferta' })
-  getPostulaciones(@Param('id', ParseIntPipe) id: number) {
-    return this.postulacionesService.findByOferta(id);
+  getPostulaciones(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.postulacionesService.findByOferta(id, user);
   }
 
   @Put('postulaciones/:postId/estado')
   @Roles(Rol.EMPRESA, Rol.ADMIN, Rol.COORDINADOR)
   @ApiOperation({ summary: 'Actualizar estado de postulación' })
-  updateEstado(@Param('postId', ParseIntPipe) id: number, @Body('estado') estado: any) {
-    return this.postulacionesService.updateEstado(id, estado);
+  updateEstado(@Param('postId', ParseIntPipe) id: number, @Body('estado') estado: any, @CurrentUser() user: any) {
+    return this.postulacionesService.updateEstado(id, estado, user);
   }
 }

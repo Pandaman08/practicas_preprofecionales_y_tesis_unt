@@ -6,14 +6,14 @@ import { Eye, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { Estudiante, PaginatedResponse, Rol } from '@/lib/types';
+import { Asesor, PaginatedResponse, Rol } from '@/lib/types';
 import { useAuth } from '@/lib/hooks/useAuth';
 import Header from '@/components/layouts/Header';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Modal from '@/components/shared/Modal';
-import EstudianteCreateForm from '@/components/forms/EstudianteCreateForm';
+import AsesorCreateForm from '@/components/forms/AsesorCreateForm';
 
-export default function EstudiantesPage() {
+export default function AsesoresPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const canManage = user?.rol === Rol.ADMIN;
@@ -21,52 +21,49 @@ export default function EstudiantesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [especialidad, setEspecialidad] = useState('');
-  const [ciclo, setCiclo] = useState('');
-  const [activo, setActivo] = useState<string>('');
+  const [activo, setActivo] = useState('');
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDirty, setCreateDirty] = useState(false);
-  const [selected, setSelected] = useState<Estudiante | null>(null);
+  const [selected, setSelected] = useState<Asesor | null>(null);
   const [form, setForm] = useState({
     nombres: '',
     apellidos: '',
-    codigo: '',
-    dni: '',
-    ciclo: 1,
     especialidad: '',
+    telefono: '',
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['estudiantes', page, search, especialidad, ciclo, activo],
+    queryKey: ['asesores', page, especialidad, activo],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ success: boolean; data: PaginatedResponse<Estudiante> }>(
-        ENDPOINTS.ESTUDIANTES.BASE,
-        { params: { page, limit: 10, search, especialidad, ciclo: ciclo || undefined, activo: activo || undefined } },
+      const { data } = await apiClient.get<{ success: boolean; data: PaginatedResponse<Asesor> }>(
+        ENDPOINTS.ASESORES.BASE,
+        { params: { page, limit: 10, especialidad, activo: activo || undefined } },
       );
       return data.data;
     },
   });
 
+  const rows = useMemo(() => {
+    const base = data?.data ?? [];
+    if (!search.trim()) return base;
+    const q = search.toLowerCase();
+    return base.filter((item) => (`${item.nombres} ${item.apellidos}`.toLowerCase().includes(q) || (item.usuario?.email || '').toLowerCase().includes(q)));
+  }, [data, search]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!selected) return;
-      await apiClient.put(ENDPOINTS.ESTUDIANTES.BY_ID(selected.id), {
-        nombres: form.nombres,
-        apellidos: form.apellidos,
-        codigo: form.codigo,
-        dni: form.dni,
-        ciclo: Number(form.ciclo),
-        especialidad: form.especialidad,
-      });
+      await apiClient.put(ENDPOINTS.ASESORES.BY_ID(selected.id), form);
     },
     onSuccess: () => {
-      toast.success('Estudiante actualizado correctamente');
+      toast.success('Asesor actualizado correctamente');
       setEditOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['estudiantes'] });
+      queryClient.invalidateQueries({ queryKey: ['asesores'] });
     },
-    onError: () => toast.error('No se pudo actualizar el estudiante'),
+    onError: () => toast.error('No se pudo actualizar el asesor'),
   });
 
   const toggleActivoMutation = useMutation({
@@ -74,18 +71,16 @@ export default function EstudiantesPage() {
       await apiClient.put(ENDPOINTS.USERS.BY_ID(usuarioId), { activo: activoNuevo });
     },
     onSuccess: (_, vars) => {
-      toast.success(vars.activoNuevo ? 'Estudiante reactivado' : 'Estudiante inactivado');
-      queryClient.invalidateQueries({ queryKey: ['estudiantes'] });
+      toast.success(vars.activoNuevo ? 'Asesor reactivado' : 'Asesor inactivado');
+      queryClient.invalidateQueries({ queryKey: ['asesores'] });
     },
-    onError: () => toast.error('No se pudo actualizar el estado del estudiante'),
+    onError: () => toast.error('No se pudo actualizar el estado del asesor'),
   });
 
-  const rows = useMemo(() => data?.data ?? [], [data]);
-
-  const columns: Column<Estudiante>[] = [
+  const columns: Column<Asesor>[] = [
     {
       key: 'nombres',
-      header: 'Estudiante',
+      header: 'Asesor',
       sortable: true,
       render: (_, row) => (
         <div>
@@ -94,19 +89,12 @@ export default function EstudiantesPage() {
         </div>
       ),
     },
-    { key: 'codigo', header: 'Codigo', sortable: true },
-    { key: 'dni', header: 'DNI', sortable: true },
     { key: 'especialidad', header: 'Especialidad', sortable: true },
-    {
-      key: 'ciclo',
-      header: 'Ciclo',
-      sortable: true,
-      render: (v) => `${v}°`,
-    },
+    { key: 'telefono', header: 'Telefono' },
     {
       key: 'usuario',
       header: 'Estado',
-      render: (v: Estudiante['usuario']) => (
+      render: (v: Asesor['usuario']) => (
         <span className={v?.activo ? 'badge-activo' : 'badge-inactivo'}>{v?.activo ? 'Activo' : 'Inactivo'}</span>
       ),
     },
@@ -134,10 +122,8 @@ export default function EstudiantesPage() {
                   setForm({
                     nombres: row.nombres,
                     apellidos: row.apellidos,
-                    codigo: row.codigo,
-                    dni: row.dni,
-                    ciclo: row.ciclo,
                     especialidad: row.especialidad,
+                    telefono: row.telefono || '',
                   });
                   setEditOpen(true);
                 }}
@@ -169,37 +155,27 @@ export default function EstudiantesPage() {
 
   return (
     <>
-      <Header title="Gestion de Estudiantes" />
+      <Header title="Gestion de Asesores" />
       <div className="h-[calc(100vh-73px)] overflow-hidden bg-slate-50 p-4 sm:p-6">
         <div className="flex h-full flex-col gap-4">
         <section className="sticky top-0 z-10 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div className="relative md:col-span-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar por nombre, codigo, DNI o correo"
+                placeholder="Buscar asesor por nombre o correo"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="input-field pl-9"
               />
             </div>
-
             <input
               value={especialidad}
               onChange={(e) => setEspecialidad(e.target.value)}
               className="input-field"
               placeholder="Especialidad"
             />
-
-            <input
-              type="number"
-              value={ciclo}
-              onChange={(e) => setCiclo(e.target.value)}
-              className="input-field"
-              placeholder="Ciclo"
-            />
-
             <select value={activo} onChange={(e) => setActivo(e.target.value)} className="input-field">
               <option value="">Todos los estados</option>
               <option value="true">Activos</option>
@@ -212,7 +188,6 @@ export default function EstudiantesPage() {
               onClick={() => {
                 setSearch('');
                 setEspecialidad('');
-                setCiclo('');
                 setActivo('');
               }}
               className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
@@ -227,7 +202,7 @@ export default function EstudiantesPage() {
                 className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
               >
                 <Plus className="h-4 w-4" />
-                Crear estudiante
+                Crear asesor
               </button>
             ) : null}
           </div>
@@ -242,7 +217,7 @@ export default function EstudiantesPage() {
           page={page}
           limit={10}
           onPageChange={setPage}
-          emptyMessage="No hay estudiantes para los filtros aplicados"
+          emptyMessage="No hay asesores para los filtros aplicados"
           mobileCardTitle={(row) => `${row.nombres} ${row.apellidos}`}
           rowClassName={(row) => (!row.usuario?.activo ? 'opacity-70 bg-slate-50' : '')}
         />
@@ -250,15 +225,13 @@ export default function EstudiantesPage() {
         </div>
       </div>
 
-      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="Detalle de estudiante" maxWidthClassName="max-w-xl">
+      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="Detalle de asesor" maxWidthClassName="max-w-xl">
         {selected && (
           <div className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
             <p><strong>Nombres:</strong> {selected.nombres}</p>
             <p><strong>Apellidos:</strong> {selected.apellidos}</p>
-            <p><strong>Codigo:</strong> {selected.codigo}</p>
-            <p><strong>DNI:</strong> {selected.dni}</p>
-            <p><strong>Ciclo:</strong> {selected.ciclo}</p>
             <p><strong>Especialidad:</strong> {selected.especialidad}</p>
+            <p><strong>Telefono:</strong> {selected.telefono || '-'}</p>
             <p className="sm:col-span-2"><strong>Email:</strong> {selected.usuario?.email}</p>
           </div>
         )}
@@ -270,14 +243,14 @@ export default function EstudiantesPage() {
           setCreateOpen(false);
           setCreateDirty(false);
         }}
-        title="Crear estudiante"
+        title="Crear asesor"
         description="Registro rapido desde la vista actual"
         maxWidthClassName="max-w-3xl"
         confirmOnCloseWhenDirty
         isDirty={createDirty}
       >
         {createOpen ? (
-          <EstudianteCreateForm
+          <AsesorCreateForm
             onCancel={() => {
               setCreateOpen(false);
               setCreateDirty(false);
@@ -285,7 +258,7 @@ export default function EstudiantesPage() {
             onSuccess={() => {
               setCreateOpen(false);
               setCreateDirty(false);
-              queryClient.invalidateQueries({ queryKey: ['estudiantes'] });
+              queryClient.invalidateQueries({ queryKey: ['asesores'] });
             }}
             onDirtyChange={setCreateDirty}
           />
@@ -295,7 +268,7 @@ export default function EstudiantesPage() {
       <Modal
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        title="Editar estudiante"
+        title="Editar asesor"
         maxWidthClassName="max-w-xl"
         footer={
           <div className="flex items-center justify-end gap-2">
@@ -309,10 +282,8 @@ export default function EstudiantesPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input className="input-field" value={form.nombres} onChange={(e) => setForm((p) => ({ ...p, nombres: e.target.value }))} placeholder="Nombres" />
           <input className="input-field" value={form.apellidos} onChange={(e) => setForm((p) => ({ ...p, apellidos: e.target.value }))} placeholder="Apellidos" />
-          <input className="input-field" value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} placeholder="Codigo" />
-          <input className="input-field" value={form.dni} onChange={(e) => setForm((p) => ({ ...p, dni: e.target.value }))} placeholder="DNI" />
-          <input className="input-field" type="number" value={form.ciclo} onChange={(e) => setForm((p) => ({ ...p, ciclo: Number(e.target.value) }))} placeholder="Ciclo" />
           <input className="input-field" value={form.especialidad} onChange={(e) => setForm((p) => ({ ...p, especialidad: e.target.value }))} placeholder="Especialidad" />
+          <input className="input-field" value={form.telefono} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} placeholder="Telefono" />
         </div>
       </Modal>
     </>

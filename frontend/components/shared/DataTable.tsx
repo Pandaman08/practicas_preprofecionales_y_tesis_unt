@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Column<T> {
@@ -7,6 +8,7 @@ export interface Column<T> {
   header: string;
   render?: (value: any, row: T) => React.ReactNode;
   className?: string;
+  sortable?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -18,6 +20,8 @@ interface DataTableProps<T> {
   limit?: number;
   onPageChange?: (page: number) => void;
   emptyMessage?: string;
+  mobileCardTitle?: (row: T) => string;
+  rowClassName?: (row: T) => string;
 }
 
 export default function DataTable<T extends { id?: number | string }>({
@@ -29,8 +33,39 @@ export default function DataTable<T extends { id?: number | string }>({
   limit = 10,
   onPageChange,
   emptyMessage = 'No hay datos disponibles',
+  mobileCardTitle,
+  rowClassName,
 }: DataTableProps<T>) {
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const totalPages = Math.ceil(total / limit);
+
+  const sortedData = useMemo(() => {
+    if (!sortBy) return data;
+    return [...data].sort((a, b) => {
+      const av = (a as any)[sortBy];
+      const bv = (b as any)[sortBy];
+
+      if (av === bv) return 0;
+      if (av === undefined || av === null) return 1;
+      if (bv === undefined || bv === null) return -1;
+
+      const aNorm = typeof av === 'string' ? av.toLowerCase() : av;
+      const bNorm = typeof bv === 'string' ? bv.toLowerCase() : bv;
+      const result = aNorm > bNorm ? 1 : -1;
+      return sortDir === 'asc' ? result : -result;
+    });
+  }, [data, sortBy, sortDir]);
+
+  const onSort = (col: Column<T>) => {
+    if (!col.sortable) return;
+    if (sortBy === col.key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortBy(col.key);
+    setSortDir('asc');
+  };
 
   if (loading) {
     return (
@@ -40,36 +75,73 @@ export default function DataTable<T extends { id?: number | string }>({
     );
   }
 
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        {emptyMessage}
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide ${
-                  col.className || ''
-                }`}
-              >
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-100">
-          {data.length === 0 ? (
+    <div className="space-y-4">
+      <div className="md:hidden space-y-3">
+        {sortedData.map((row, idx) => (
+          <article
+            key={row.id ?? idx}
+            className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${rowClassName ? rowClassName(row) : ''}`}
+          >
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">
+              {mobileCardTitle ? mobileCardTitle(row) : `Registro #${row.id ?? idx + 1}`}
+            </h3>
+            <div className="space-y-2">
+              {columns.map((col) => (
+                <div key={col.key} className="flex items-start justify-between gap-3 text-xs">
+                  <span className="font-medium text-gray-500">{col.header}</span>
+                  <span className="text-right text-gray-700">
+                    {col.render
+                      ? col.render((row as any)[col.key], row)
+                      : (row as any)[col.key] ?? '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-xl border border-gray-200 md:block">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <td
-                colSpan={columns.length}
-                className="px-4 py-8 text-center text-gray-400 text-sm"
-              >
-                {emptyMessage}
-              </td>
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 ${
+                    col.className || ''
+                  }`}
+                >
+                  <button
+                    type="button"
+                    disabled={!col.sortable}
+                    onClick={() => onSort(col)}
+                    className={`inline-flex items-center gap-1 ${col.sortable ? 'hover:text-gray-700' : 'cursor-default'}`}
+                  >
+                    {col.header}
+                    {sortBy === col.key && (
+                      <span className="text-[10px]">{sortDir === 'asc' ? '▲' : '▼'}</span>
+                    )}
+                  </button>
+                </th>
+              ))}
             </tr>
-          ) : (
-            data.map((row, idx) => (
-              <tr key={row.id ?? idx} className="hover:bg-gray-50 transition-colors">
+          </thead>
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {sortedData.map((row, idx) => (
+              <tr
+                key={row.id ?? idx}
+                className={`transition-colors hover:bg-gray-50 ${rowClassName ? rowClassName(row) : ''}`}
+              >
                 {columns.map((col) => (
                   <td key={col.key} className={`px-4 py-3 text-sm text-gray-700 ${col.className || ''}`}>
                     {col.render
@@ -78,14 +150,14 @@ export default function DataTable<T extends { id?: number | string }>({
                   </td>
                 ))}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="bg-white px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
           <p className="text-sm text-gray-500">
             {(page - 1) * limit + 1}–{Math.min(page * limit, total)} de {total}
           </p>

@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AsesoresService } from './asesores.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,11 +19,13 @@ export class AsesoresController {
   @ApiOperation({ summary: 'Listar asesores' })
   findAll(
     @Query('especialidad') especialidad?: string,
+    @Query('activo') activo?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.service.findAll({
       especialidad,
+      activo: activo !== undefined ? activo === 'true' : undefined,
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
     });
@@ -42,6 +44,13 @@ export class AsesoresController {
     return this.service.findOne(id);
   }
 
+  @Post()
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Crear asesor (solo ADMIN)' })
+  create(@Body() body: any) {
+    return this.service.create(body);
+  }
+
   @Put('mi-perfil')
   @Roles(Rol.ASESOR)
   @ApiOperation({ summary: 'Actualizar mi perfil' })
@@ -50,8 +59,8 @@ export class AsesoresController {
   }
 
   @Put(':id')
-  @Roles(Rol.ADMIN, Rol.COORDINADOR)
-  @ApiOperation({ summary: 'Actualizar asesor' })
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Actualizar asesor (solo ADMIN)' })
   update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
     return this.service.update(id, body);
   }

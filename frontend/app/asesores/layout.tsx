@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layouts/Sidebar';
 import { useAuth } from '@/lib/hooks/useAuth';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -29,9 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="h-screen md:flex">
       <Sidebar />
-      <main className="flex-1 overflow-hidden">
-        {children}
-      </main>
+      <main className="flex-1 overflow-hidden">{children}</main>
     </div>
   );
 }

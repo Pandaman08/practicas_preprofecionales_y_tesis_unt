@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ofertaSchema, OfertaFormData } from '@/lib/utils/validations';
@@ -8,6 +9,9 @@ import apiClient from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Rol } from '@/lib/types';
+import { useAuth } from '@/lib/hooks/useAuth';
+import SearchableEntitySelect, { SearchableEntityOption } from '@/components/ui/SearchableEntitySelect';
 
 interface OfertaFormProps {
   defaultValues?: Partial<OfertaFormData>;
@@ -16,28 +20,59 @@ interface OfertaFormProps {
 
 export default function OfertaForm({ defaultValues, ofertaId }: OfertaFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  const isCompany = user?.rol === Rol.EMPRESA;
 
   const { data: empresas } = useQuery({
     queryKey: ['empresas-select'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/empresas', { params: { limit: 100 } });
+      const { data } = await apiClient.get('/empresas', { params: { limit: 200, activo: true } });
       return data.data.data;
     },
+    enabled: !isCompany,
+  });
+
+  const { data: miEmpresa } = useQuery({
+    queryKey: ['mi-empresa-oferta'],
+    queryFn: async () => {
+      const { data } = await apiClient.get(ENDPOINTS.EMPRESAS.MI_EMPRESA);
+      return data.data as { id: number; razonSocial: string; ruc?: string };
+    },
+    enabled: isCompany,
   });
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<OfertaFormData>({
     resolver: zodResolver(ofertaSchema),
     defaultValues,
   });
 
+  const empresaId = watch('empresaId');
+
+  const empresasOptions = useMemo<SearchableEntityOption[]>(() => (
+    (empresas || []).map((item: any) => ({
+      value: item.id,
+      title: item.razonSocial,
+      subtitle: [item.ruc, item.contactoNombre, item.usuario?.email].filter(Boolean).join(' • '),
+      keywords: [item.razonSocial, item.ruc, item.contactoNombre, item.usuario?.email].filter(Boolean),
+    }))
+  ), [empresas]);
+
+  useEffect(() => {
+    if (isCompany && miEmpresa?.id && empresaId !== miEmpresa.id) {
+      setValue('empresaId', miEmpresa.id, { shouldValidate: true });
+    }
+  }, [empresaId, isCompany, miEmpresa?.id, setValue]);
+
   const onSubmit = async (data: OfertaFormData) => {
     try {
       if (ofertaId) {
-        await apiClient.patch(`${ENDPOINTS.OFERTAS.BASE}/${ofertaId}`, data);
+        await apiClient.put(`${ENDPOINTS.OFERTAS.BASE}/${ofertaId}`, data);
         toast.success('Oferta actualizada');
       } else {
         await apiClient.post(ENDPOINTS.OFERTAS.BASE, data);
@@ -63,16 +98,22 @@ export default function OfertaForm({ defaultValues, ofertaId }: OfertaFormProps)
         {errors.descripcion && <p className="mt-1 text-xs text-red-600">{errors.descripcion.message}</p>}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
-        <select {...register('empresaId', { valueAsNumber: true })} className="input-field">
-          <option value="">Seleccionar empresa...</option>
-          {empresas?.map((e: any) => (
-            <option key={e.id} value={e.id}>{e.razonSocial}</option>
-          ))}
-        </select>
-        {errors.empresaId && <p className="mt-1 text-xs text-red-600">{errors.empresaId.message}</p>}
-      </div>
+      {isCompany ? (
+        <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          La oferta se publicara automaticamente con tu empresa.
+        </div>
+      ) : (
+        <SearchableEntitySelect
+          label="Empresa"
+          placeholder="Buscar empresa por razon social o RUC"
+          searchPlaceholder="Escribe razon social, RUC o correo"
+          emptyMessage="No se encontraron empresas con ese criterio."
+          value={empresaId}
+          options={empresasOptions}
+          onChange={(value) => setValue('empresaId', value || 0, { shouldDirty: true, shouldValidate: true })}
+          error={errors.empresaId?.message}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>

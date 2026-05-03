@@ -49,7 +49,7 @@ export default function TesisForm({ defaultValues, tesisId }: TesisFormProps) {
     try {
       const payload = { ...data, asesorId: Number(data.asesorId) };
       if (tesisId) {
-        await apiClient.patch(`${ENDPOINTS.TESIS.BASE}/${tesisId}`, payload);
+        await apiClient.put(`${ENDPOINTS.TESIS.BASE}/${tesisId}`, payload);
         toast.success('Tesis actualizada');
       } else {
         await apiClient.post(ENDPOINTS.TESIS.BASE, payload);
@@ -78,8 +78,9 @@ export default function TesisForm({ defaultValues, tesisId }: TesisFormProps) {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
           <select {...register('tipo')} className="input-field">
-            <option value="PREGRADO">Pregrado</option>
-            <option value="POSGRADO">Posgrado</option>
+            <option value="TESIS">Tesis</option>
+            <option value="TRABAJO_SUFICIENCIA">Trabajo de suficiencia</option>
+            <option value="PROYECTO_INVESTIGACION">Proyecto de investigacion</option>
           </select>
         </div>
         <div>

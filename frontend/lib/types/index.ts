@@ -10,11 +10,9 @@ export enum Rol {
 }
 
 export enum EstadoPractica {
-  EN_PROCESO = 'EN_PROCESO',
   PENDIENTE = 'PENDIENTE',
   EN_CURSO = 'EN_CURSO',
   COMPLETADA = 'COMPLETADA',
-  SUSPENDIDA = 'SUSPENDIDA',
   CANCELADA = 'CANCELADA',
 }
 
@@ -22,7 +20,6 @@ export enum EstadoTesis {
   PROPUESTA = 'PROPUESTA',
   EN_DESARROLLO = 'EN_DESARROLLO',
   OBSERVADA = 'OBSERVADA',
-  EN_PROCESO = 'EN_PROCESO',
   LISTA_SUSTENTACION = 'LISTA_SUSTENTACION',
   SUSTENTADA = 'SUSTENTADA',
   APROBADA = 'APROBADA',
@@ -37,7 +34,6 @@ export enum EstadoPostulacion {
 export enum EstadoConvenio {
   ACTIVO = 'ACTIVO',
   VENCIDO = 'VENCIDO',
-  SUSPENDIDO = 'SUSPENDIDO',
   EN_RENOVACION = 'EN_RENOVACION',
 }
 
@@ -45,8 +41,6 @@ export enum TipoTesis {
   TESIS = 'TESIS',
   TRABAJO_SUFICIENCIA = 'TRABAJO_SUFICIENCIA',
   PROYECTO_INVESTIGACION = 'PROYECTO_INVESTIGACION',
-  PREGRADO = 'PREGRADO',
-  POSGRADO = 'POSGRADO',
 }
 
 // ========================
@@ -61,6 +55,7 @@ export interface Usuario {
   activo: boolean;
   createdAt: string;
   perfil?: {
+    id?: number;
     nombres?: string;
     apellidos?: string;
     razonSocial?: string;
@@ -69,21 +64,24 @@ export interface Usuario {
 
 export interface Estudiante {
   id: number;
+  nombres: string;
+  apellidos: string;
   codigo: string;
   dni: string;
   ciclo: number;
   especialidad: string;
   telefono?: string;
   direccion?: string;
-  usuario: Usuario;
+  usuario: (Usuario & { id: number });
 }
 
 export interface Asesor {
   id: number;
-  codigo: string;
+  nombres: string;
+  apellidos: string;
   especialidad: string;
   telefono?: string;
-  usuario: Usuario;
+  usuario: (Usuario & { id: number });
 }
 
 export interface Empresa {
@@ -95,7 +93,7 @@ export interface Empresa {
   telefono?: string;
   contactoNombre?: string;
   contactoEmail?: string;
-  usuario?: Usuario;
+  usuario?: (Usuario & { id: number });
   _count?: {
     ofertas: number;
     convenios: number;
@@ -119,9 +117,8 @@ export interface Oferta {
   requisitos: string;
   modalidad: string;
   remuneracion?: number;
-  horasSemana: number;
   vacantes: number;
-  fechaLimite: string;
+  fechaLimite?: string;
   activo: boolean;
   empresa: Empresa;
 }
@@ -137,10 +134,10 @@ export interface Postulacion {
 
 export interface Practica {
   id: number;
+  titulo: string;
   fechaInicio: string;
-  fechaFin: string;
-  totalHoras: number;
-  horasCompletadas: number;
+  fechaFin?: string;
+  horasTotales: number;
   estado: EstadoPractica;
   observaciones?: string;
   estudiante: Estudiante;
@@ -152,7 +149,7 @@ export interface Practica {
 export interface Seguimiento {
   id: number;
   fecha: string;
-  horas: number;
+  horasEjecutadas: number;
   actividades: string;
   observaciones?: string;
   practicaId: number;
@@ -164,10 +161,10 @@ export interface Tesis {
   resumen?: string;
   tipo: TipoTesis;
   estado: EstadoTesis;
-  fechaInicio: string;
+  fechaInicio?: string;
   fechaSustentacion?: string;
   estudiante: Estudiante;
-  asesor: Asesor;
+  asesor?: Asesor;
   avances?: AvanceTesis[];
 }
 
@@ -235,4 +232,49 @@ export interface DashboardResumen {
   kpis: KpiItem[];
   trend?: DashboardTrend;
   highlights: string[];
+}
+
+export interface DashboardAdminAnalytics {
+  filters: {
+    month: number | null;
+    year: number | null;
+    especialidad: string | null;
+    estado: string | null;
+  };
+  kpis: {
+    estudiantesTotal: number;
+    asesoresTotal: number;
+    empresasTotal: number;
+    practicasActivas: number;
+    practicasCompletadas: number;
+    tesisEnProceso: number;
+    tesisFinalizadas: number;
+    ofertasActivas: number;
+    postulacionesPendientes: number;
+    postulacionesAceptadas: number;
+    postulacionesRechazadas: number;
+    rendimientoTesis: number;
+  };
+  charts: {
+    monthlyTrend: Array<{ month: string; practicas: number; tesis: number }>;
+    careerDistribution: Array<{ name: string; value: number }>;
+    companyDistribution: Array<{ name: string; value: number }>;
+    donutStatus: Array<{ name: string; value: number }>;
+  };
+  alerts: Array<{
+    id: number;
+    titulo: string;
+    empresa: string;
+    estudiante: string;
+    fechaFin: string | Date | null;
+  }>;
+  quickAccess: Array<{ label: string; href: string }>;
+  actionLog: Array<{
+    id: string;
+    modulo: string;
+    accion: string;
+    fecha: string | Date;
+    descripcion: string;
+  }>;
+  generatedAt: string;
 }

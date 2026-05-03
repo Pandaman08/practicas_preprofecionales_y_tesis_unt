@@ -21,6 +21,21 @@ type TrendInfo = {
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
+  private getDateRangeFromFilters(month?: number, year?: number) {
+    if (!year) return undefined;
+
+    if (month && month >= 1 && month <= 12) {
+      const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const end = new Date(year, month, 0, 23, 59, 59, 999);
+      return { start, end };
+    }
+
+    return {
+      start: new Date(year, 0, 1, 0, 0, 0, 0),
+      end: new Date(year, 11, 31, 23, 59, 59, 999),
+    };
+  }
+
   private getCurrentMonthRange() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -91,11 +106,256 @@ export class DashboardService {
     };
   }
 
+  async getAdminAnalytics(params: {
+    month?: number;
+    year?: number;
+    especialidad?: string;
+    estado?: string;
+  }) {
+    const now = new Date();
+    const { month, year, especialidad, estado } = params;
+    const range = this.getDateRangeFromFilters(month, year);
+
+    const practicaWhere: any = {};
+    const tesisWhere: any = {};
+    const postulacionWhere: any = {};
+
+    if (range) {
+      practicaWhere.createdAt = { gte: range.start, lte: range.end };
+      tesisWhere.createdAt = { gte: range.start, lte: range.end };
+      postulacionWhere.createdAt = { gte: range.start, lte: range.end };
+    }
+
+    if (especialidad) {
+      practicaWhere.estudiante = { especialidad: { contains: especialidad, mode: 'insensitive' } };
+      tesisWhere.estudiante = { especialidad: { contains: especialidad, mode: 'insensitive' } };
+      postulacionWhere.estudiante = { especialidad: { contains: especialidad, mode: 'insensitive' } };
+    }
+
+    if (estado) {
+      practicaWhere.estado = estado as any;
+      tesisWhere.estado = estado as any;
+      postulacionWhere.estado = estado as any;
+    }
+
+    const [
+      estudiantesTotal,
+      asesoresTotal,
+      empresasTotal,
+      ofertasActivas,
+      practicas,
+      tesis,
+      postulaciones,
+      especialidades,
+      practicasExpiran,
+      practicasRecent,
+      tesisRecent,
+      postulacionesRecent,
+    ] = await Promise.all([
+      this.prisma.estudiante.count({
+        where: especialidad ? { especialidad: { contains: especialidad, mode: 'insensitive' } } : undefined,
+      }),
+      this.prisma.asesor.count(),
+      this.prisma.empresa.count(),
+      this.prisma.oferta.count({ where: { activo: true } }),
+      this.prisma.practica.findMany({
+        where: practicaWhere,
+        include: {
+          empresa: { select: { razonSocial: true } },
+          estudiante: { select: { especialidad: true } },
+        },
+      }),
+      this.prisma.tesis.findMany({
+        where: tesisWhere,
+        include: { estudiante: { select: { especialidad: true } } },
+      }),
+      this.prisma.postulacion.findMany({ where: postulacionWhere }),
+      this.prisma.estudiante.groupBy({
+        by: ['especialidad'],
+        _count: { especialidad: true },
+        orderBy: { _count: { especialidad: 'desc' } },
+        take: 8,
+      }),
+      this.prisma.practica.findMany({
+        where: {
+          estado: { in: ['EN_CURSO', 'PENDIENTE'] },
+          fechaFin: { gte: now, lte: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000) },
+        },
+        include: {
+          estudiante: { select: { nombres: true, apellidos: true } },
+          empresa: { select: { razonSocial: true } },
+        },
+        take: 6,
+        orderBy: { fechaFin: 'asc' },
+      }),
+      this.prisma.practica.findMany({
+        where: practicaWhere,
+        select: { id: true, titulo: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.tesis.findMany({
+        where: tesisWhere,
+        select: { id: true, titulo: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.postulacion.findMany({
+        where: postulacionWhere,
+        select: { id: true, createdAt: true, estado: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    const practicasByEstado = practicas.reduce((acc, item) => {
+      acc[item.estado] = (acc[item.estado] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const tesisByEstado = tesis.reduce((acc, item) => {
+      acc[item.estado] = (acc[item.estado] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const postulacionesByEstado = postulaciones.reduce((acc, item) => {
+      acc[item.estado] = (acc[item.estado] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const monthMap: Record<string, { month: string; practicas: number; tesis: number }> = {};
+    const pushMonth = (date: Date, type: 'practicas' | 'tesis') => {
+      const key = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
+      if (!monthMap[key]) {
+        monthMap[key] = { month: key, practicas: 0, tesis: 0 };
+      }
+      monthMap[key][type] += 1;
+    };
+
+    practicas.forEach((p) => pushMonth(new Date(p.createdAt), 'practicas'));
+    tesis.forEach((t) => pushMonth(new Date(t.createdAt), 'tesis'));
+
+    const monthlyTrend = Object.values(monthMap).sort((a, b) =>
+      a.month.localeCompare(b.month),
+    );
+
+    const companyCounter = practicas.reduce((acc, p) => {
+      const name = p.empresa?.razonSocial || 'Sin empresa';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const companyDistribution = Object.entries(companyCounter)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+
+    const careerDistribution = especialidades.map((item) => ({
+      name: item.especialidad || 'Sin especialidad',
+      value: item._count.especialidad,
+    }));
+
+    const donutStatus = [
+      {
+        name: 'Practicas activas',
+        value: (practicasByEstado.EN_CURSO || 0) + (practicasByEstado.PENDIENTE || 0),
+      },
+      {
+        name: 'Practicas completadas',
+        value: practicasByEstado.COMPLETADA || 0,
+      },
+      {
+        name: 'Tesis en proceso',
+        value: (tesisByEstado.EN_DESARROLLO || 0) + (tesisByEstado.LISTA_SUSTENTACION || 0),
+      },
+      {
+        name: 'Tesis finalizadas',
+        value: (tesisByEstado.SUSTENTADA || 0) + (tesisByEstado.APROBADA || 0),
+      },
+    ];
+
+    const tesisFinalizadas = (tesisByEstado.SUSTENTADA || 0) + (tesisByEstado.APROBADA || 0);
+    const tesisTotal = tesis.length || 1;
+    const rendimientoTesis = Math.round((tesisFinalizadas / tesisTotal) * 100);
+
+    const kpis = {
+      estudiantesTotal,
+      asesoresTotal,
+      empresasTotal,
+      practicasActivas: (practicasByEstado.EN_CURSO || 0) + (practicasByEstado.PENDIENTE || 0),
+      practicasCompletadas: practicasByEstado.COMPLETADA || 0,
+      tesisEnProceso: (tesisByEstado.EN_DESARROLLO || 0) + (tesisByEstado.LISTA_SUSTENTACION || 0),
+      tesisFinalizadas,
+      ofertasActivas,
+      postulacionesPendientes: postulacionesByEstado.PENDIENTE || 0,
+      postulacionesAceptadas: postulacionesByEstado.ACEPTADA || 0,
+      postulacionesRechazadas: postulacionesByEstado.RECHAZADA || 0,
+      rendimientoTesis,
+    };
+
+    const actionLog = [
+      ...practicasRecent.map((item) => ({
+        id: `practica-${item.id}`,
+        modulo: 'Practicas',
+        accion: 'Registro creado',
+        fecha: item.createdAt,
+        descripcion: item.titulo,
+      })),
+      ...tesisRecent.map((item) => ({
+        id: `tesis-${item.id}`,
+        modulo: 'Tesis',
+        accion: 'Registro creado',
+        fecha: item.createdAt,
+        descripcion: item.titulo,
+      })),
+      ...postulacionesRecent.map((item) => ({
+        id: `postulacion-${item.id}`,
+        modulo: 'Postulaciones',
+        accion: `Estado ${item.estado}`,
+        fecha: item.createdAt,
+        descripcion: `Postulacion #${item.id}`,
+      })),
+    ]
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .slice(0, 12);
+
+    return {
+      filters: {
+        month: month || null,
+        year: year || null,
+        especialidad: especialidad || null,
+        estado: estado || null,
+      },
+      kpis,
+      charts: {
+        monthlyTrend,
+        careerDistribution,
+        companyDistribution,
+        donutStatus,
+      },
+      alerts: practicasExpiran.map((item) => ({
+        id: item.id,
+        titulo: item.titulo,
+        empresa: item.empresa.razonSocial,
+        estudiante: `${item.estudiante.nombres} ${item.estudiante.apellidos}`,
+        fechaFin: item.fechaFin,
+      })),
+      quickAccess: [
+        { label: 'Gestion de estudiantes', href: '/estudiantes' },
+        { label: 'Gestion de practicas', href: '/practicas' },
+        { label: 'Gestion de tesis', href: '/tesis' },
+        { label: 'Modulo de reportes', href: '/reportes' },
+      ],
+      actionLog,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
   async getStatsByUser(userId: number, rol: Rol) {
     const currentMonth = this.getCurrentMonthRange();
     const previousMonth = this.getPreviousMonthRange();
 
-    if (rol === Rol.ADMIN || rol === Rol.COORDINADOR) {
+    if (rol === Rol.ADMIN) {
       const [
         usuariosActivos,
         totalEstudiantes,
@@ -134,11 +394,54 @@ export class DashboardService {
 
       return {
         role: rol,
-        title: rol === Rol.ADMIN ? 'Vision general institucional' : 'Control operativo academico',
+        title: 'Vision general institucional',
         kpis,
         trend,
         highlights: [
           `Total de postulaciones este mes: ${postCurrent}`,
+          `Variacion mensual: ${trend.percent}%`,
+        ],
+      };
+    }
+
+    if (rol === Rol.COORDINADOR) {
+      const [
+        practicasEnCurso,
+        practicasCompletadas,
+        tesisEnDesarrollo,
+        tesisObservadas,
+        tesisSustentadas,
+        postulacionesPendientes,
+        seguimientosMes,
+        seguimientosMesPrevio,
+      ] = await Promise.all([
+        this.prisma.practica.count({ where: { estado: 'EN_CURSO' } }),
+        this.prisma.practica.count({ where: { estado: 'COMPLETADA' } }),
+        this.prisma.tesis.count({ where: { estado: 'EN_DESARROLLO' } }),
+        this.prisma.tesis.count({ where: { estado: 'OBSERVADA' } }),
+        this.prisma.tesis.count({ where: { estado: 'SUSTENTADA' } }),
+        this.prisma.postulacion.count({ where: { estado: 'PENDIENTE' } }),
+        this.prisma.seguimiento.count({ where: { createdAt: { gte: currentMonth.start, lte: currentMonth.end } } }),
+        this.prisma.seguimiento.count({ where: { createdAt: { gte: previousMonth.start, lte: previousMonth.end } } }),
+      ]);
+
+      const trend = this.buildTrend('Seguimientos academicos del mes', seguimientosMes, seguimientosMesPrevio);
+      const kpis: KpiItem[] = [
+        { key: 'practicasEnCurso', label: 'Practicas en curso', value: practicasEnCurso },
+        { key: 'practicasCompletadas', label: 'Practicas completadas', value: practicasCompletadas },
+        { key: 'tesisEnDesarrollo', label: 'Tesis en desarrollo', value: tesisEnDesarrollo },
+        { key: 'tesisObservadas', label: 'Tesis observadas', value: tesisObservadas },
+        { key: 'tesisSustentadas', label: 'Tesis sustentadas', value: tesisSustentadas },
+        { key: 'postulacionesPendientes', label: 'Postulaciones pendientes', value: postulacionesPendientes },
+      ];
+
+      return {
+        role: rol,
+        title: 'Seguimiento academico institucional',
+        kpis,
+        trend,
+        highlights: [
+          `Seguimientos del periodo: ${seguimientosMes}`,
           `Variacion mensual: ${trend.percent}%`,
         ],
       };

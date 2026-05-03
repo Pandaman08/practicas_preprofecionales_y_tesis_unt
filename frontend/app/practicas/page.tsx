@@ -1,55 +1,123 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Eye, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import apiClient from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { Practica, PaginatedResponse, EstadoPractica } from '@/lib/types';
+import { EstadoPractica, PaginatedResponse, Practica, Rol } from '@/lib/types';
+import { useAuth } from '@/lib/hooks/useAuth';
 import Header from '@/components/layouts/Header';
 import DataTable, { Column } from '@/components/shared/DataTable';
+import Modal from '@/components/shared/Modal';
 import { formatDate } from '@/lib/utils/formatDate';
-
-const estadoColors: Record<string, string> = {
-  EN_PROCESO: 'badge-activo',
-  EN_CURSO: 'badge-activo',
-  PENDIENTE: 'badge-pendiente',
-  COMPLETADA: 'badge-pendiente',
-  SUSPENDIDA: 'badge-inactivo',
-  CANCELADA: 'badge-inactivo',
-};
+import PracticaCreateForm from '@/components/forms/PracticaCreateForm';
 
 const estadoLabels: Record<string, string> = {
-  EN_PROCESO: 'En proceso',
   EN_CURSO: 'En curso',
   PENDIENTE: 'Pendiente',
   COMPLETADA: 'Completada',
-  SUSPENDIDA: 'Suspendida',
   CANCELADA: 'Cancelada',
 };
 
+const estadoColors: Record<string, string> = {
+  EN_CURSO: 'badge-activo',
+  PENDIENTE: 'badge-pendiente',
+  COMPLETADA: 'badge-activo',
+  CANCELADA: 'badge-inactivo',
+};
+
 export default function PracticasPage() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const canManage = user?.rol === Rol.ADMIN || user?.rol === Rol.COORDINADOR || user?.rol === Rol.ASESOR;
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [estado, setEstado] = useState('');
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDirty, setCreateDirty] = useState(false);
+  const [selected, setSelected] = useState<Practica | null>(null);
+  const [form, setForm] = useState({
+    titulo: '',
+    fechaInicio: '',
+    fechaFin: '',
+    horasTotales: 0,
+    estado: 'PENDIENTE',
+    observaciones: '',
+  });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['practicas', page, search],
+    queryKey: ['practicas', page, estado, user?.rol, user?.perfil?.id],
     queryFn: async () => {
+        const asesorId = user?.rol === Rol.ASESOR ? user?.perfil?.id : undefined;
       const { data } = await apiClient.get<{ success: boolean; data: PaginatedResponse<Practica> }>(
         ENDPOINTS.PRACTICAS.BASE,
-        { params: { page, limit: 10 } }
+        { params: { page, limit: 10, estado: estado || undefined, asesorId } },
       );
       return data.data;
     },
   });
 
+  const filteredRows = useMemo(() => {
+    const rows = data?.data ?? [];
+    if (!search.trim()) return rows;
+    const q = search.toLowerCase();
+    return rows.filter((row) => {
+      const estudiante = `${row.estudiante?.nombres ?? ''} ${row.estudiante?.apellidos ?? ''}`.toLowerCase();
+      const empresa = (row.empresa?.razonSocial ?? '').toLowerCase();
+      const titulo = (row.titulo ?? '').toLowerCase();
+      return estudiante.includes(q) || empresa.includes(q) || titulo.includes(q);
+    });
+  }, [data, search]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      await apiClient.put(ENDPOINTS.PRACTICAS.BY_ID(selected.id), {
+        titulo: form.titulo,
+        fechaInicio: form.fechaInicio || undefined,
+        fechaFin: form.fechaFin || null,
+        horasTotales: Number(form.horasTotales),
+        estado: form.estado,
+        observaciones: form.observaciones,
+      });
+    },
+    onSuccess: () => {
+      toast.success('Practica actualizada correctamente');
+      setEditOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['practicas'] });
+    },
+    onError: () => toast.error('No se pudo actualizar la practica'),
+  });
+
+  const softDeleteMutation = useMutation({
+    mutationFn: async ({ id, estadoNuevo }: { id: number; estadoNuevo: EstadoPractica }) => {
+      await apiClient.put(ENDPOINTS.PRACTICAS.BY_ID(id), { estado: estadoNuevo });
+    },
+    onSuccess: (_, vars) => {
+      toast.success(vars.estadoNuevo === EstadoPractica.CANCELADA ? 'Practica inactivada' : 'Practica reactivada');
+      queryClient.invalidateQueries({ queryKey: ['practicas'] });
+    },
+    onError: () => toast.error('No se pudo actualizar el estado de la practica'),
+  });
+
   const columns: Column<Practica>[] = [
     {
-      key: 'estudiante',
-      header: 'Estudiante',
-      render: (_, row) =>
-        `${row.estudiante?.usuario?.nombres} ${row.estudiante?.usuario?.apellidos}`,
+      key: 'titulo',
+      header: 'Practica',
+      sortable: true,
+      render: (v, row) => (
+        <div>
+          <p className="font-medium text-slate-800">{v}</p>
+          <p className="text-xs text-slate-500">{row.estudiante?.nombres} {row.estudiante?.apellidos}</p>
+        </div>
+      ),
     },
     {
       key: 'empresa',
@@ -59,68 +127,216 @@ export default function PracticasPage() {
     {
       key: 'fechaInicio',
       header: 'Inicio',
+      sortable: true,
       render: (v) => formatDate(v),
     },
     {
       key: 'fechaFin',
       header: 'Fin',
-      render: (v) => formatDate(v),
+      render: (v) => (v ? formatDate(v) : '-'),
     },
     {
-      key: 'horasCompletadas',
+      key: 'horasTotales',
       header: 'Horas',
-      render: (_, row) => `${row.horasCompletadas}/${row.totalHoras}`,
+      sortable: true,
     },
     {
       key: 'estado',
       header: 'Estado',
-      render: (v: EstadoPractica) => (
-        <span className={estadoColors[v] || 'badge-pendiente'}>{estadoLabels[v] || v}</span>
-      ),
+      render: (v: EstadoPractica) => <span className={estadoColors[v] || 'badge-pendiente'}>{estadoLabels[v] || v}</span>,
     },
     {
       key: 'id',
       header: 'Acciones',
-      render: (v) => (
-        <Link href={`/practicas/${v}`} className="text-blue-600 hover:underline text-sm">
-          Ver detalle
-        </Link>
+      render: (_, row) => (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              setSelected(row);
+              setDetailOpen(true);
+            }}
+            className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            title="Ver detalle"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <Link href={`/practicas/${row.id}`} className="rounded-md p-2 text-slate-500 hover:bg-slate-100" title="Abrir pagina detalle">
+            <Search className="h-4 w-4" />
+          </Link>
+
+          {canManage && (
+            <>
+              <button
+                onClick={() => {
+                  setSelected(row);
+                  setForm({
+                    titulo: row.titulo,
+                    fechaInicio: row.fechaInicio ? String(row.fechaInicio).slice(0, 10) : '',
+                    fechaFin: row.fechaFin ? String(row.fechaFin).slice(0, 10) : '',
+                    horasTotales: row.horasTotales,
+                    estado: row.estado,
+                    observaciones: row.observaciones || '',
+                  });
+                  setEditOpen(true);
+                }}
+                className="rounded-md p-2 text-blue-600 hover:bg-blue-50"
+                title="Editar"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() =>
+                  softDeleteMutation.mutate({
+                    id: row.id,
+                    estadoNuevo: row.estado === EstadoPractica.CANCELADA ? EstadoPractica.EN_CURSO : EstadoPractica.CANCELADA,
+                  })
+                }
+                className={`rounded-md p-2 ${
+                  row.estado === EstadoPractica.CANCELADA ? 'text-emerald-600 hover:bg-emerald-50' : 'text-rose-600 hover:bg-rose-50'
+                }`}
+                title={row.estado === EstadoPractica.CANCELADA ? 'Reactivar' : 'Inactivar'}
+              >
+                {row.estado === EstadoPractica.CANCELADA ? <RefreshCw className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+              </button>
+            </>
+          )}
+        </div>
       ),
     },
   ];
 
   return (
     <>
-      <Header title="Prácticas Preprofesionales" />
-      <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar práctica..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field pl-9"
-            />
-          </div>
-          <Link href="/practicas/nueva" className="btn-primary flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva práctica
-          </Link>
-        </div>
+      <Header title="Gestion de Practicas" />
+      <div className="h-[calc(100vh-73px)] overflow-hidden bg-slate-50 p-4 sm:p-6">
+        <div className="flex h-full flex-col gap-4">
+        <section className="sticky top-0 z-10 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="grid w-full grid-cols-1 gap-3 md:max-w-3xl md:grid-cols-3">
+              <div className="relative md:col-span-2">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-field pl-9" placeholder="Buscar por estudiante, empresa o titulo" />
+              </div>
+              <select value={estado} onChange={(e) => setEstado(e.target.value)} className="input-field">
+                <option value="">Todos los estados</option>
+                {Object.entries(estadoLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
 
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm"
+              >
+                <Plus className="h-4 w-4" /> Nueva practica
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-3">
+            <button
+              onClick={() => {
+                setSearch('');
+                setEstado('');
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </section>
+
+        <div className="min-h-0 flex-1 overflow-auto">
         <DataTable
           columns={columns}
-          data={data?.data ?? []}
+          data={filteredRows}
           loading={isLoading}
           total={data?.total ?? 0}
           page={page}
           limit={10}
           onPageChange={setPage}
-          emptyMessage="No hay prácticas registradas"
+          emptyMessage="No hay practicas para los filtros aplicados"
+          mobileCardTitle={(row) => row.titulo}
+          rowClassName={(row) => (row.estado === EstadoPractica.CANCELADA ? 'opacity-70 bg-slate-50' : '')}
         />
+        </div>
+        </div>
       </div>
+
+      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="Detalle de practica" maxWidthClassName="max-w-2xl">
+        {selected && (
+          <div className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
+            <p><strong>Titulo:</strong> {selected.titulo}</p>
+            <p><strong>Estado:</strong> {estadoLabels[selected.estado] || selected.estado}</p>
+            <p><strong>Estudiante:</strong> {selected.estudiante?.nombres} {selected.estudiante?.apellidos}</p>
+            <p><strong>Empresa:</strong> {selected.empresa?.razonSocial}</p>
+            <p><strong>Inicio:</strong> {formatDate(selected.fechaInicio)}</p>
+            <p><strong>Fin:</strong> {selected.fechaFin ? formatDate(selected.fechaFin) : '-'}</p>
+            <p><strong>Horas:</strong> {selected.horasTotales}</p>
+            <p className="sm:col-span-2"><strong>Observaciones:</strong> {selected.observaciones || '-'}</p>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateDirty(false);
+        }}
+        title="Nueva practica"
+        description="Registro rapido desde la vista actual"
+        maxWidthClassName="max-w-3xl"
+        confirmOnCloseWhenDirty
+        isDirty={createDirty}
+      >
+        {createOpen ? (
+          <PracticaCreateForm
+            onCancel={() => {
+              setCreateOpen(false);
+              setCreateDirty(false);
+            }}
+            onSuccess={() => {
+              setCreateOpen(false);
+              setCreateDirty(false);
+              queryClient.invalidateQueries({ queryKey: ['practicas'] });
+            }}
+            onDirtyChange={setCreateDirty}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Editar practica"
+        maxWidthClassName="max-w-2xl"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={() => setEditOpen(false)} className="btn-secondary text-sm">Cancelar</button>
+            <button onClick={() => saveMutation.mutate()} className="btn-primary px-4 py-2 text-sm" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <input className="input-field sm:col-span-2" value={form.titulo} onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))} placeholder="Titulo" />
+          <input type="date" className="input-field" value={form.fechaInicio} onChange={(e) => setForm((p) => ({ ...p, fechaInicio: e.target.value }))} />
+          <input type="date" className="input-field" value={form.fechaFin} onChange={(e) => setForm((p) => ({ ...p, fechaFin: e.target.value }))} />
+          <input type="number" className="input-field" value={form.horasTotales} onChange={(e) => setForm((p) => ({ ...p, horasTotales: Number(e.target.value) }))} placeholder="Horas" />
+          <select className="input-field" value={form.estado} onChange={(e) => setForm((p) => ({ ...p, estado: e.target.value }))}>
+            {Object.entries(estadoLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <textarea className="input-field sm:col-span-2" rows={3} value={form.observaciones} onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))} placeholder="Observaciones" />
+        </div>
+      </Modal>
     </>
   );
 }

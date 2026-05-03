@@ -89,6 +89,17 @@ function pickOne<T>(items: T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
+function buildUniquePerson(index: number) {
+  const first = firstNames[index % firstNames.length];
+  const second = firstNames[Math.floor(index / firstNames.length) % firstNames.length];
+  const last1 = lastNames[index % lastNames.length];
+  const last2 = lastNames[Math.floor(index / lastNames.length) % lastNames.length];
+
+  const nombres = first === second ? first : `${first} ${second}`;
+  const apellidos = last1 === last2 ? `${last1} ${last2}` : `${last1} ${last2}`;
+  return { nombres, apellidos };
+}
+
 function pickManyUnique<T>(items: T[], count: number): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -162,11 +173,10 @@ async function main() {
 
   const asesores = [] as Awaited<ReturnType<typeof prisma.asesor.create>>[];
   for (let i = 1; i <= 12; i++) {
-    const nombres = pickOne(firstNames);
-    const apellidos = `${pickOne(lastNames)} ${pickOne(lastNames)}`;
+    const person = buildUniquePerson(i + 1000);
     const user = await prisma.usuario.create({
       data: {
-        email: `asesor${i}@unt.edu.pe`,
+        email: i === 1 ? 'asesor1@unt.edu.pe' : `asesor${i}.${person.nombres.replace(/\s+/g, '').toLowerCase()}@unt.edu.pe`,
         password: passwords.asesor,
         rol: Rol.ASESOR,
       },
@@ -174,8 +184,8 @@ async function main() {
     const asesor = await prisma.asesor.create({
       data: {
         usuarioId: user.id,
-        nombres,
-        apellidos,
+        nombres: person.nombres,
+        apellidos: person.apellidos,
         dni: `70${String(i).padStart(6, '0')}`,
         telefono: `044-${randomInt(100000, 999999)}`,
         especialidad: pickOne(specialties),
@@ -187,6 +197,8 @@ async function main() {
 
   const empresas = [] as Awaited<ReturnType<typeof prisma.empresa.create>>[];
   for (let i = 1; i <= 15; i++) {
+    const sector = sectors[(i - 1) % sectors.length];
+    const person = buildUniquePerson(i + 2000);
     const user = await prisma.usuario.create({
       data: {
         email: `empresa${i}@demo.pe`,
@@ -201,8 +213,8 @@ async function main() {
         ruc: `20${String(100000000 + i).slice(0, 9)}`,
         direccion: `Av. Principal ${100 + i}, Trujillo`,
         telefono: `044-${randomInt(100000, 999999)}`,
-        sector: pickOne(sectors),
-        contactoNombre: `${pickOne(firstNames)} ${pickOne(lastNames)}`,
+        sector,
+        contactoNombre: `${person.nombres} ${person.apellidos.split(' ')[0]}`,
         contactoEmail: `contacto${i}@empresa-demo.pe`,
       },
     });
@@ -211,11 +223,10 @@ async function main() {
 
   const estudiantes = [] as Awaited<ReturnType<typeof prisma.estudiante.create>>[];
   for (let i = 1; i <= 80; i++) {
-    const nombres = pickOne(firstNames);
-    const apellidos = `${pickOne(lastNames)} ${pickOne(lastNames)}`;
+    const person = buildUniquePerson(i);
     const user = await prisma.usuario.create({
       data: {
-        email: `estudiante${i}@unt.edu.pe`,
+        email: i === 1 ? 'estudiante1@unt.edu.pe' : `estudiante${i}.${person.nombres.split(' ')[0].toLowerCase()}@unt.edu.pe`,
         password: passwords.estudiante,
         rol: Rol.ESTUDIANTE,
       },
@@ -224,8 +235,8 @@ async function main() {
       data: {
         usuarioId: user.id,
         codigo: `10${String(10000000 + i).slice(0, 8)}`,
-        nombres,
-        apellidos,
+        nombres: person.nombres,
+        apellidos: person.apellidos,
         dni: `40${String(i).padStart(6, '0')}`,
         telefono: Math.random() < 0.85 ? `9${randomInt(10000000, 99999999)}` : null,
         direccion: Math.random() < 0.6 ? `Mz. ${randomInt(1, 30)} Lt. ${randomInt(1, 20)}, Trujillo` : null,

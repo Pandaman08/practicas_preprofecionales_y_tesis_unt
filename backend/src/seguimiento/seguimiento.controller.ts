@@ -17,6 +17,7 @@ export class SeguimientoController {
   @Get()
   @ApiOperation({ summary: 'Listar prácticas' })
   findAll(
+      @CurrentUser() user: any,
     @Query('estudianteId') estudianteId?: string,
     @Query('empresaId') empresaId?: string,
     @Query('asesorId') asesorId?: string,
@@ -25,6 +26,7 @@ export class SeguimientoController {
     @Query('limit') limit?: string,
   ) {
     return this.service.findAllPracticas({
+      currentUser: user,
       estudianteId: estudianteId ? +estudianteId : undefined,
       empresaId: empresaId ? +empresaId : undefined,
       asesorId: asesorId ? +asesorId : undefined,
@@ -43,8 +45,8 @@ export class SeguimientoController {
   @Post()
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR)
   @ApiOperation({ summary: 'Registrar nueva práctica' })
-  create(@Body() body: any) {
-    return this.service.createPractica(body);
+  create(@Body() body: any, @CurrentUser() user: any) {
+    return this.service.createPractica(body, user);
   }
 
   @Put(':id')

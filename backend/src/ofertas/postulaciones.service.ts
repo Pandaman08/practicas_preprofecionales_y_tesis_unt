@@ -1,10 +1,27 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { EstadoPostulacion } from '@prisma/client';
+import { EstadoPostulacion, Rol } from '@prisma/client';
 
 @Injectable()
 export class PostulacionesService {
   constructor(private prisma: PrismaService) {}
+
+  async getEstudianteIdByUsuario(usuarioId: number) {
+    const estudiante = await this.prisma.estudiante.findUnique({ where: { usuarioId } });
+    if (!estudiante) throw new NotFoundException('Perfil de estudiante no encontrado');
+    return estudiante.id;
+  }
+
+  private async assertEmpresaOwnsOferta(ofertaId: number, usuarioId: number) {
+    const oferta = await this.prisma.oferta.findUnique({
+      where: { id: ofertaId },
+      select: { id: true, empresa: { select: { usuarioId: true } } },
+    });
+    if (!oferta) throw new NotFoundException(`Oferta #${ofertaId} no encontrada`);
+    if (oferta.empresa.usuarioId !== usuarioId) {
+      throw new ForbiddenException('No tiene permisos sobre esta oferta');
+    }
+  }
 
   async postular(estudianteId: number, ofertaId: number, cartaMotivacion?: string) {
     const oferta = await this.prisma.oferta.findUnique({ where: { id: ofertaId } });
@@ -29,7 +46,11 @@ export class PostulacionesService {
     });
   }
 
-  async findByOferta(ofertaId: number) {
+  async findByOferta(ofertaId: number, user: { id: number; rol: Rol }) {
+    if (user.rol === Rol.EMPRESA) {
+      await this.assertEmpresaOwnsOferta(ofertaId, user.id);
+    }
+
     return this.prisma.postulacion.findMany({
       where: { ofertaId },
       include: { estudiante: true },
@@ -37,9 +58,17 @@ export class PostulacionesService {
     });
   }
 
-  async updateEstado(id: number, estado: EstadoPostulacion) {
-    const post = await this.prisma.postulacion.findUnique({ where: { id } });
+  async updateEstado(id: number, estado: EstadoPostulacion, user: { id: number; rol: Rol }) {
+    const post = await this.prisma.postulacion.findUnique({
+      where: { id },
+      select: { id: true, ofertaId: true },
+    });
     if (!post) throw new NotFoundException(`Postulación #${id} no encontrada`);
+
+    if (user.rol === Rol.EMPRESA) {
+      await this.assertEmpresaOwnsOferta(post.ofertaId, user.id);
+    }
+
     return this.prisma.postulacion.update({ where: { id }, data: { estado } });
   }
 }

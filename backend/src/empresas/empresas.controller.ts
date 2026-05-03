@@ -23,11 +23,15 @@ export class EmpresasController {
   @ApiOperation({ summary: 'Listar empresas' })
   findAll(
     @Query('sector') sector?: string,
+    @Query('activo') activo?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.empresasService.findAll({
       sector,
+      activo: activo !== undefined ? activo === 'true' : undefined,
+      search,
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
     });
@@ -46,6 +50,13 @@ export class EmpresasController {
     return this.empresasService.findOne(id);
   }
 
+  @Post()
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Crear empresa (solo ADMIN)' })
+  create(@Body() body: any) {
+    return this.empresasService.create(body);
+  }
+
   @Put('mi-perfil')
   @Roles(Rol.EMPRESA)
   @ApiOperation({ summary: 'Actualizar mi perfil' })
@@ -54,8 +65,8 @@ export class EmpresasController {
   }
 
   @Put(':id')
-  @Roles(Rol.ADMIN, Rol.COORDINADOR)
-  @ApiOperation({ summary: 'Actualizar empresa' })
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Actualizar empresa (solo ADMIN)' })
   update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
     return this.empresasService.update(id, body);
   }

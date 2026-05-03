@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { EstudiantesService } from './estudiantes.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,17 +18,22 @@ export class EstudiantesController {
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.EMPRESA)
   @ApiOperation({ summary: 'Listar estudiantes' })
   findAll(
+    @CurrentUser() user: any,
     @Query('especialidad') especialidad?: string,
     @Query('ciclo') ciclo?: string,
+    @Query('activo') activo?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.service.findAll({
       especialidad,
       ciclo: ciclo ? +ciclo : undefined,
+      activo: activo !== undefined ? activo === 'true' : undefined,
+      search,
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
-    });
+    }, user);
   }
 
   @Get('mi-perfil')
@@ -41,8 +46,15 @@ export class EstudiantesController {
   @Get(':id')
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.EMPRESA)
   @ApiOperation({ summary: 'Ver detalle de estudiante' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.service.findOne(id, user);
+  }
+
+  @Post()
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Crear estudiante (solo ADMIN)' })
+  create(@Body() body: any) {
+    return this.service.create(body);
   }
 
   @Put('mi-perfil')
@@ -53,8 +65,8 @@ export class EstudiantesController {
   }
 
   @Put(':id')
-  @Roles(Rol.ADMIN, Rol.COORDINADOR)
-  @ApiOperation({ summary: 'Actualizar estudiante' })
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Actualizar estudiante (solo ADMIN)' })
   update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
     return this.service.update(id, body);
   }

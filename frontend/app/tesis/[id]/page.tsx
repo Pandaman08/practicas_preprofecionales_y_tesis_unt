@@ -63,7 +63,7 @@ export default function TesisDetailPage() {
                 <BookOpen className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h2 className="font-semibold text-gray-900 text-lg">{tesis.titulo}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{tesis.tipo === 'PREGRADO' ? 'Pregrado' : 'Posgrado'}</p>
+                  <p className="text-sm text-gray-500 mt-1">{tesis.tipo === 'TESIS' ? 'Tesis' : tesis.tipo === 'TRABAJO_SUFICIENCIA' ? 'Trabajo de suficiencia' : 'Proyecto de investigacion'}</p>
                 </div>
               </div>
               {tesis.resumen && (

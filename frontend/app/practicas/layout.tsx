@@ -26,9 +26,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="h-screen md:flex">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-hidden">
         {children}
       </main>
     </div>

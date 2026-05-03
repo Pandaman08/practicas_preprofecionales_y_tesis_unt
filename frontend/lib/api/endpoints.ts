@@ -63,6 +63,7 @@ export const ENDPOINTS = {
   DASHBOARD: {
     STATS: '/dashboard/stats',
     MI_RESUMEN: '/dashboard/mi-resumen',
+    ADMIN_ANALYTICS: '/dashboard/admin-analytics',
   },
 
   // Reportes

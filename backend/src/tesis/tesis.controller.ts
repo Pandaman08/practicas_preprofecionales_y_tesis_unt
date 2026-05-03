@@ -21,6 +21,7 @@ export class TesisController {
   @Get()
   @ApiOperation({ summary: 'Listar tesis' })
   findAll(
+    @CurrentUser() user: any,
     @Query('estudianteId') estudianteId?: string,
     @Query('asesorId') asesorId?: string,
     @Query('estado') estado?: EstadoTesis,
@@ -28,6 +29,7 @@ export class TesisController {
     @Query('limit') limit?: string,
   ) {
     return this.tesisService.findAll({
+      currentUser: user,
       estudianteId: estudianteId ? +estudianteId : undefined,
       asesorId: asesorId ? +asesorId : undefined,
       estado,
@@ -78,8 +80,8 @@ export class TesisController {
   }
 
   @Delete('avances/:avanceId')
-  @Roles(Rol.ADMIN, Rol.COORDINADOR)
-  @ApiOperation({ summary: 'Eliminar avance' })
+  @Roles(Rol.ADMIN)
+  @ApiOperation({ summary: 'Eliminar avance (solo ADMIN)' })
   removeAvance(@Param('avanceId', ParseIntPipe) id: number) {
     return this.avancesService.remove(id);
   }

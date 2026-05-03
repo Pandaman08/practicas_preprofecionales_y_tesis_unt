@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Building2, User, Calendar } from 'lucide-react';
@@ -24,6 +24,10 @@ export default function PracticaDetailPage() {
     },
     enabled: !!id,
   });
+
+  const totalHoras = practica?.horasTotales ?? 0;
+  const horasEjec = (practica?.seguimientos ?? []).reduce((acc, s) => acc + (s.horasEjecutadas ?? 0), 0);
+  const porcentaje = totalHoras > 0 ? Math.min((horasEjec / totalHoras) * 100, 100) : 0;
 
   if (isLoading) {
     return (
@@ -64,7 +68,7 @@ export default function PracticaDetailPage() {
                   <div>
                     <p className="text-gray-500">Estudiante</p>
                     <p className="font-medium">
-                      {practica.estudiante?.usuario?.nombres} {practica.estudiante?.usuario?.apellidos}
+                      {practica.estudiante?.nombres} {practica.estudiante?.apellidos}
                     </p>
                   </div>
                 </div>
@@ -102,7 +106,7 @@ export default function PracticaDetailPage() {
                       <div className="flex justify-between mb-1">
                         <p className="text-sm font-medium">{formatDate(seg.fecha)}</p>
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                          {seg.horas}h
+                          {seg.horasEjecutadas}h
                         </span>
                       </div>
                       <p className="text-sm text-gray-600">{seg.actividades}</p>
@@ -123,24 +127,24 @@ export default function PracticaDetailPage() {
                 <h3 className="font-semibold">Progreso de Horas</h3>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-blue-600">{practica.horasCompletadas}</p>
-                <p className="text-gray-500 text-sm">de {practica.totalHoras} horas</p>
+                <p className="text-3xl font-bold text-blue-600">{horasEjec}</p>
+                <p className="text-gray-500 text-sm">de {totalHoras} horas</p>
               </div>
               <div className="mt-4 bg-gray-200 rounded-full h-3">
                 <div
                   className="bg-blue-600 h-3 rounded-full transition-all"
-                  style={{ width: `${Math.min((practica.horasCompletadas / practica.totalHoras) * 100, 100)}%` }}
+                  style={{ width: `${porcentaje}%` }}
                 />
               </div>
               <p className="text-xs text-gray-500 text-center mt-2">
-                {Math.round((practica.horasCompletadas / practica.totalHoras) * 100)}% completado
+                {Math.round(porcentaje)}% completado
               </p>
             </div>
 
             <div className="card">
               <h3 className="font-semibold text-gray-800 mb-3">Estado</h3>
-              <span className={`badge-${practica.estado === 'EN_PROCESO' ? 'activo' : practica.estado === 'COMPLETADA' ? 'pendiente' : 'inactivo'}`}>
-                {practica.estado === 'EN_PROCESO' ? 'En proceso' : practica.estado === 'COMPLETADA' ? 'Completada' : 'Suspendida'}
+              <span className={`badge-${practica.estado === 'EN_CURSO' || practica.estado === 'COMPLETADA' ? 'activo' : practica.estado === 'PENDIENTE' ? 'pendiente' : 'inactivo'}`}>
+                {practica.estado === 'EN_CURSO' ? 'En curso' : practica.estado === 'COMPLETADA' ? 'Completada' : practica.estado === 'PENDIENTE' ? 'Pendiente' : 'Cancelada'}
               </span>
               {practica.observaciones && (
                 <p className="text-sm text-gray-600 mt-3">{practica.observaciones}</p>
