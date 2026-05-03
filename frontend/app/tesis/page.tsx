@@ -11,14 +11,20 @@ import Header from '@/components/layouts/Header';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import { formatDate } from '@/lib/utils/formatDate';
 
-const estadoLabels: Record<EstadoTesis, string> = {
+const estadoLabels: Record<string, string> = {
+  PROPUESTA: 'Propuesta',
+  EN_DESARROLLO: 'En desarrollo',
+  OBSERVADA: 'Observada',
   EN_PROCESO: 'En proceso',
   LISTA_SUSTENTACION: 'Lista para sustentar',
   SUSTENTADA: 'Sustentada',
   APROBADA: 'Aprobada',
 };
 
-const estadoColors: Record<EstadoTesis, string> = {
+const estadoColors: Record<string, string> = {
+  PROPUESTA: 'badge-pendiente',
+  EN_DESARROLLO: 'badge-pendiente',
+  OBSERVADA: 'badge-inactivo',
   EN_PROCESO: 'badge-pendiente',
   LISTA_SUSTENTACION: 'badge-activo',
   SUSTENTADA: 'badge-activo',
@@ -65,7 +71,16 @@ export default function TesisPage() {
     {
       key: 'tipo',
       header: 'Tipo',
-      render: (v) => v === 'PREGRADO' ? 'Pregrado' : 'Posgrado',
+      render: (v) => {
+        const labels: Record<string, string> = {
+          PREGRADO: 'Pregrado',
+          POSGRADO: 'Posgrado',
+          TESIS: 'Tesis',
+          TRABAJO_SUFICIENCIA: 'Trabajo de suficiencia',
+          PROYECTO_INVESTIGACION: 'Proyecto de investigacion',
+        };
+        return labels[v as string] || (v as string);
+      },
     },
     {
       key: 'fechaInicio',
@@ -76,7 +91,7 @@ export default function TesisPage() {
       key: 'estado',
       header: 'Estado',
       render: (v: EstadoTesis) => (
-        <span className={estadoColors[v]}>{estadoLabels[v]}</span>
+        <span className={estadoColors[v] || 'badge-pendiente'}>{estadoLabels[v] || v}</span>
       ),
     },
   ];

@@ -11,11 +11,17 @@ export enum Rol {
 
 export enum EstadoPractica {
   EN_PROCESO = 'EN_PROCESO',
+  PENDIENTE = 'PENDIENTE',
+  EN_CURSO = 'EN_CURSO',
   COMPLETADA = 'COMPLETADA',
   SUSPENDIDA = 'SUSPENDIDA',
+  CANCELADA = 'CANCELADA',
 }
 
 export enum EstadoTesis {
+  PROPUESTA = 'PROPUESTA',
+  EN_DESARROLLO = 'EN_DESARROLLO',
+  OBSERVADA = 'OBSERVADA',
   EN_PROCESO = 'EN_PROCESO',
   LISTA_SUSTENTACION = 'LISTA_SUSTENTACION',
   SUSTENTADA = 'SUSTENTADA',
@@ -32,9 +38,13 @@ export enum EstadoConvenio {
   ACTIVO = 'ACTIVO',
   VENCIDO = 'VENCIDO',
   SUSPENDIDO = 'SUSPENDIDO',
+  EN_RENOVACION = 'EN_RENOVACION',
 }
 
 export enum TipoTesis {
+  TESIS = 'TESIS',
+  TRABAJO_SUFICIENCIA = 'TRABAJO_SUFICIENCIA',
+  PROYECTO_INVESTIGACION = 'PROYECTO_INVESTIGACION',
   PREGRADO = 'PREGRADO',
   POSGRADO = 'POSGRADO',
 }
@@ -45,11 +55,16 @@ export enum TipoTesis {
 export interface Usuario {
   id: number;
   email: string;
-  nombres: string;
-  apellidos: string;
+  nombres?: string;
+  apellidos?: string;
   rol: Rol;
   activo: boolean;
   createdAt: string;
+  perfil?: {
+    nombres?: string;
+    apellidos?: string;
+    razonSocial?: string;
+  } | null;
 }
 
 export interface Estudiante {
@@ -197,4 +212,27 @@ export interface DashboardStats {
   miasTesis?: number;
   conveniosActivos?: number;
   misOfertas?: number;
+}
+
+export interface KpiItem {
+  key: string;
+  label: string;
+  value: number;
+  hint?: string;
+}
+
+export interface DashboardTrend {
+  label: string;
+  current: number;
+  previous: number;
+  delta: number;
+  percent: number;
+}
+
+export interface DashboardResumen {
+  role: Rol;
+  title: string;
+  kpis: KpiItem[];
+  trend?: DashboardTrend;
+  highlights: string[];
 }

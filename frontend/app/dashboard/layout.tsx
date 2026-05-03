@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {

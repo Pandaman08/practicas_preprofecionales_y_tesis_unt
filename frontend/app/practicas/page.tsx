@@ -11,16 +11,22 @@ import Header from '@/components/layouts/Header';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import { formatDate } from '@/lib/utils/formatDate';
 
-const estadoColors: Record<EstadoPractica, string> = {
+const estadoColors: Record<string, string> = {
   EN_PROCESO: 'badge-activo',
+  EN_CURSO: 'badge-activo',
+  PENDIENTE: 'badge-pendiente',
   COMPLETADA: 'badge-pendiente',
   SUSPENDIDA: 'badge-inactivo',
+  CANCELADA: 'badge-inactivo',
 };
 
-const estadoLabels: Record<EstadoPractica, string> = {
+const estadoLabels: Record<string, string> = {
   EN_PROCESO: 'En proceso',
+  EN_CURSO: 'En curso',
+  PENDIENTE: 'Pendiente',
   COMPLETADA: 'Completada',
   SUSPENDIDA: 'Suspendida',
+  CANCELADA: 'Cancelada',
 };
 
 export default function PracticasPage() {
@@ -69,7 +75,7 @@ export default function PracticasPage() {
       key: 'estado',
       header: 'Estado',
       render: (v: EstadoPractica) => (
-        <span className={estadoColors[v]}>{estadoLabels[v]}</span>
+        <span className={estadoColors[v] || 'badge-pendiente'}>{estadoLabels[v] || v}</span>
       ),
     },
     {

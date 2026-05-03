@@ -14,6 +14,12 @@ const rolLabels: Record<string, string> = {
 export default function Header({ title }: { title: string }) {
   const { user, logout } = useAuth();
 
+  const displayName = user?.perfil?.razonSocial
+    || `${user?.perfil?.nombres ?? ''} ${user?.perfil?.apellidos ?? ''}`.trim()
+    || `${user?.nombres ?? ''} ${user?.apellidos ?? ''}`.trim()
+    || user?.email
+    || 'Usuario';
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
       <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
@@ -29,7 +35,7 @@ export default function Header({ title }: { title: string }) {
           </div>
           <div className="text-sm">
             <p className="font-medium text-gray-800">
-              {user?.nombres} {user?.apellidos}
+              {displayName}
             </p>
             <p className="text-gray-500 text-xs">{rolLabels[user?.rol || ''] || user?.rol}</p>
           </div>

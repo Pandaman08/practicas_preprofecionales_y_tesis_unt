@@ -19,7 +19,9 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -31,31 +33,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        {/* Logo */}
+    
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-4">
+      
+      <div className="w-full max-w-md bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-white/20 p-8">
+
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+          <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-blue-100 shadow-inner">
             <BookOpen className="h-8 w-8 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Bienvenido</h1>
-          <p className="text-gray-500 text-sm mt-1">Sistema de Prácticas y Tesis - UNT</p>
+
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">
+            Iniciar sesión
+          </h1>
+
+          <p className="text-sm text-gray-500 mt-1">
+            Sistema de Prácticas y Tesis - UNT
+          </p>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo electrónico
+              Correo
             </label>
             <input
               type="email"
               {...register('email')}
               placeholder="usuario@unt.edu.pe"
-              className="input-field"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-transparent focus:ring-2 focus:ring-blue-500"
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {errors.email.message}
+              </p>
             )}
           </div>
 
@@ -64,38 +79,52 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Contraseña
             </label>
+
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
                 placeholder="••••••••"
-                className="input-field pr-10"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-transparent focus:ring-2 focus:ring-blue-500"
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
+
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {errors.password.message}
+              </p>
             )}
           </div>
 
+          {/* Button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="btn-primary w-full py-3 text-base"
+            className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
         </form>
 
+        {/* Footer */}
         <p className="mt-6 text-center text-sm text-gray-500">
           ¿No tienes cuenta?{' '}
-          <Link href="/register" className="text-blue-600 hover:underline font-medium">
+          <Link
+            href="/register"
+            className="text-blue-600 font-medium hover:underline"
+          >
             Regístrate
           </Link>
         </p>

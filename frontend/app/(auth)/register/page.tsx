@@ -69,7 +69,6 @@ export default function RegisterPage() {
             <input type="password" {...register('password')} className="input-field" placeholder="••••••••" />
             {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Código UNT</label>
@@ -111,13 +110,14 @@ export default function RegisterPage() {
             {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
         </form>
-
+      
         <p className="mt-6 text-center text-sm text-gray-500">
           ¿Ya tienes cuenta?{' '}
           <Link href="/login" className="text-blue-600 hover:underline font-medium">
             Iniciar sesión
           </Link>
         </p>
+        
       </div>
     </div>
   );
