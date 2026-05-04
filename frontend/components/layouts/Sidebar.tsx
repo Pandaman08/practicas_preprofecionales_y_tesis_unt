@@ -106,7 +106,16 @@ export default function Sidebar() {
   const renderNav = () => (
     <nav className="flex-1 p-4 space-y-1">
       {visibleItems.map((item) => {
-        const isActive = pathname.startsWith(item.href);
+        const matchesCurrent =
+          pathname === item.href || pathname.startsWith(item.href + '/');
+        // Si otro item más específico también hace match, este cede el activo
+        const overriddenByChild = visibleItems.some(
+          (other) =>
+            other.href !== item.href &&
+            other.href.startsWith(item.href) &&
+            (pathname === other.href || pathname.startsWith(other.href + '/')),
+        );
+        const isActive = matchesCurrent && !overriddenByChild;
         const Icon = item.icon;
         return (
           <Link
