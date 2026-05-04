@@ -325,7 +325,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
           </div>
         </article>
 
-        <div className="space-y-4">
+        <div className="space-y-4 xl:max-h-[34rem] xl:overflow-hidden">
           <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-800">Tendencia del periodo</h3>
             {trend ? (
@@ -365,7 +365,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
             )}
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:flex xl:min-h-0 xl:flex-col">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">{roleInsight.title}</h3>
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">KPIs del rol</span>
@@ -373,7 +373,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
             <p className="mb-3 text-xs text-slate-500">{roleInsight.subtitle}</p>
 
             {rankedKpis.length ? (
-              <div className="space-y-3">
+              <div className="space-y-3 xl:min-h-0 xl:overflow-auto xl:pr-1">
                 {rankedKpis.map((item) => {
                   const score = getKpiRoleScore(roleInsight, item);
                   const progress = maxKpiValue > 0 ? Math.round((item.value / maxKpiValue) * 100) : 0;
