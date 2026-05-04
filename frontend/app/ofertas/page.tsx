@@ -268,7 +268,6 @@ export default function OfertasPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <Header
         title={isEmpresa ? 'Mis ofertas' : 'Ofertas de práctica'}
-        subtitle={isEmpresa ? 'Gestiona tus ofertas de práctica preprofesional' : 'Encuentra oportunidades de práctica'}
       />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">

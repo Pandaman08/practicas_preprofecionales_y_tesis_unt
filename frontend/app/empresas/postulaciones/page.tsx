@@ -79,7 +79,6 @@ export default function EmpresaPostulacionesPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <Header
         title="Postulaciones recibidas"
-        subtitle="Candidatos que han aplicado a tus ofertas de práctica"
       />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">

@@ -74,7 +74,7 @@ export default function MiEmpresaPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Header title="Mi empresa" subtitle="Datos y perfil de tu empresa" />
+      <Header title="Mi empresa" />
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
