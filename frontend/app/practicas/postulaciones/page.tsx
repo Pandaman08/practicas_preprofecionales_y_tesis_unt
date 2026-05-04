@@ -144,9 +144,9 @@ export default function PostulacionesCoordinadorPage() {
 
   const tabs: { key: TabEstado; label: string; color: string }[] = [
     { key: TAB_ALL,     label: 'Todas',      color: 'bg-slate-100 text-slate-700' },
-    { key: 'ACEPTADA',  label: 'Aceptadas',  color: 'bg-emerald-100 text-emerald-700' },
-    { key: 'PENDIENTE', label: 'Pendientes', color: 'bg-amber-100 text-amber-700' },
-    { key: 'RECHAZADA', label: 'Rechazadas', color: 'bg-red-100 text-red-700' },
+      { key: EstadoPostulacion.ACEPTADA,  label: 'Aceptadas',  color: 'bg-emerald-100 text-emerald-700' },
+      { key: EstadoPostulacion.PENDIENTE, label: 'Pendientes', color: 'bg-amber-100 text-amber-700' },
+      { key: EstadoPostulacion.RECHAZADA, label: 'Rechazadas', color: 'bg-red-100 text-red-700' },
   ];
 
   if (!canFormalize) {
