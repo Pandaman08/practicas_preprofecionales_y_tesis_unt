@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EstadoPractica, Rol } from '@prisma/client';
 
@@ -180,7 +180,6 @@ export class SeguimientoService {
         where: { usuarioId: user.id },
         select: { id: true },
       });
-
       if (!asesor) throw new NotFoundException('Perfil de asesor no encontrado');
       payload.asesorId = asesor.id;
     }
@@ -191,6 +190,51 @@ export class SeguimientoService {
     return this.prisma.practica.create({
       data: payload,
       include: { estudiante: true, empresa: true },
+    });
+  }
+
+  /**
+   * Crear práctica a partir de una postulación ACEPTADA.
+   * Solo COORDINADOR o ADMIN pueden hacer esto.
+   */
+  async createPracticaDesdePostulacion(
+    postulacionId: number,
+    dto: any,
+    user: { id: number; rol: Rol },
+  ) {
+    const postulacion = await this.prisma.postulacion.findUnique({
+      where: { id: postulacionId },
+      include: {
+        estudiante: true,
+        oferta: { include: { empresa: true } },
+      },
+    });
+
+    if (!postulacion) throw new NotFoundException(`Postulación #${postulacionId} no encontrada`);
+    if (postulacion.estado !== 'ACEPTADA') {
+      throw new BadRequestException('Solo se puede formalizar una práctica a partir de una postulación ACEPTADA');
+    }
+
+    const existing = await this.prisma.practica.findUnique({ where: { postulacionId } });
+    if (existing) {
+      throw new ConflictException('Ya existe una práctica creada a partir de esta postulación');
+    }
+
+    const payload: any = {
+      ...dto,
+      estudianteId: postulacion.estudianteId,
+      empresaId: postulacion.oferta.empresaId,
+      ofertaId: postulacion.ofertaId,
+      postulacionId,
+      titulo: dto.titulo || postulacion.oferta.titulo,
+    };
+
+    this.normalizeDateField(payload, 'fechaInicio', 'fechaInicio');
+    this.normalizeDateField(payload, 'fechaFin', 'fechaFin');
+
+    return this.prisma.practica.create({
+      data: payload,
+      include: { estudiante: true, empresa: true, asesor: true },
     });
   }
 

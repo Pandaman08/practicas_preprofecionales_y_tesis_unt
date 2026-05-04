@@ -49,6 +49,17 @@ export class SeguimientoController {
     return this.service.createPractica(body, user);
   }
 
+  @Post('desde-postulacion/:postulacionId')
+  @Roles(Rol.ADMIN, Rol.COORDINADOR)
+  @ApiOperation({ summary: 'Formalizar práctica a partir de postulación aceptada' })
+  createDesdePostulacion(
+    @Param('postulacionId', ParseIntPipe) postulacionId: number,
+    @Body() body: any,
+    @CurrentUser() user: any,
+  ) {
+    return this.service.createPracticaDesdePostulacion(postulacionId, body, user);
+  }
+
   @Put(':id')
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR)
   @ApiOperation({ summary: 'Actualizar práctica' })

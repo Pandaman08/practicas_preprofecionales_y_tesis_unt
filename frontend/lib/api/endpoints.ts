@@ -38,7 +38,8 @@ export const ENDPOINTS = {
   OFERTAS: {
     BASE: '/ofertas',
     BY_ID: (id: number) => `/ofertas/${id}`,
-    MIS_POSTULACIONES: '/ofertas/mis-postulaciones',
+    MIS_POSTULACIONES: '/ofertas/mis-postulaciones',        // EMPRESA: ver postulaciones recibidas
+    MIS_SOLICITUDES: '/ofertas/mis-solicitudes',             // ESTUDIANTE: ver sus postulaciones
     POSTULAR: (id: number) => `/ofertas/${id}/postular`,
     POSTULACIONES: (id: number) => `/ofertas/${id}/postulaciones`,
     ESTADO_POSTULACION: (postId: number) => `/ofertas/postulaciones/${postId}/estado`,
@@ -48,6 +49,7 @@ export const ENDPOINTS = {
   PRACTICAS: {
     BASE: '/practicas',
     BY_ID: (id: number) => `/practicas/${id}`,
+    DESDE_POSTULACION: (postId: number) => `/practicas/desde-postulacion/${postId}`,
     SEGUIMIENTOS: (id: number) => `/practicas/${id}/seguimientos`,
     SEGUIMIENTO_BY_ID: (segId: number) => `/practicas/seguimientos/${segId}`,
   },

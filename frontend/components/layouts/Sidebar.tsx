@@ -54,7 +54,7 @@ const navItems = [
     href: '/ofertas',
     label: 'Ofertas',
     icon: Briefcase,
-    roles: [Rol.EMPRESA, Rol.ESTUDIANTE],
+    roles: [Rol.EMPRESA, Rol.ESTUDIANTE, Rol.COORDINADOR, Rol.ADMIN],
   },
   {
     href: '/empresas/postulaciones',
@@ -63,10 +63,22 @@ const navItems = [
     roles: [Rol.EMPRESA],
   },
   {
+    href: '/estudiantes/mis-postulaciones',
+    label: 'Mis postulaciones',
+    icon: FileText,
+    roles: [Rol.ESTUDIANTE],
+  },
+  {
     href: '/practicas',
     label: 'Prácticas',
     icon: Briefcase,
     roles: [Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.ESTUDIANTE],
+  },
+  {
+    href: '/practicas/postulaciones',
+    label: 'Postulaciones',
+    icon: Users,
+    roles: [Rol.ADMIN, Rol.COORDINADOR],
   },
   {
     href: '/tesis',

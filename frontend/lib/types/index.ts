@@ -127,9 +127,12 @@ export interface Postulacion {
   id: number;
   estado: EstadoPostulacion;
   fechaPostulacion: string;
+  cartaMotivacion?: string;
+  archivoCv?: string;
   observaciones?: string;
   estudiante: Estudiante;
   oferta: Oferta;
+  practica?: Pick<Practica, 'id' | 'estado' | 'titulo'>;
 }
 
 export interface Practica {
@@ -140,6 +143,8 @@ export interface Practica {
   horasTotales: number;
   estado: EstadoPractica;
   observaciones?: string;
+  ofertaId?: number;
+  postulacionId?: number;
   estudiante: Estudiante;
   empresa: Empresa;
   asesor?: Asesor;

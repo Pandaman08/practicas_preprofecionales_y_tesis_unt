@@ -167,6 +167,7 @@ model Oferta {
 
   empresa         Empresa  @relation(fields: [empresaId], references: [id])
   postulaciones   Postulacion[]
+  practicas       Practica[]
 
   @@map("ofertas")
 }
@@ -177,12 +178,14 @@ model Postulacion {
   ofertaId     Int
   estado       EstadoPostulacion @default(PENDIENTE)
   cartaMotivacion String?
+  archivoCv    String?
   fechaPostulacion DateTime      @default(now())
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id])
   oferta       Oferta     @relation(fields: [ofertaId], references: [id])
+  practica     Practica?
 
   @@unique([estudianteId, ofertaId])
   @@map("postulaciones")
@@ -194,6 +197,7 @@ model Practica {
   asesorId        Int?
   empresaId       Int
   ofertaId        Int?
+  postulacionId   Int?   @unique
   titulo          String
   descripcion     String?
   fechaInicio     DateTime
@@ -210,6 +214,8 @@ model Practica {
   estudiante      Estudiante     @relation(fields: [estudianteId], references: [id])
   asesor          Asesor?        @relation(fields: [asesorId], references: [id])
   empresa         Empresa        @relation(fields: [empresaId], references: [id])
+  oferta          Oferta?        @relation(fields: [ofertaId], references: [id])
+  postulacion     Postulacion?   @relation(fields: [postulacionId], references: [id])
   seguimientos    Seguimiento[]
 
   @@map("practicas")

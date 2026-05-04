@@ -23,7 +23,7 @@ export class PostulacionesService {
     }
   }
 
-  async postular(estudianteId: number, ofertaId: number, cartaMotivacion?: string) {
+  async postular(estudianteId: number, ofertaId: number, cartaMotivacion?: string, archivoCv?: string) {
     const oferta = await this.prisma.oferta.findUnique({ where: { id: ofertaId } });
     if (!oferta || !oferta.activo) throw new NotFoundException('Oferta no disponible');
 
@@ -33,7 +33,7 @@ export class PostulacionesService {
     if (existing) throw new ConflictException('Ya postulaste a esta oferta');
 
     return this.prisma.postulacion.create({
-      data: { estudianteId, ofertaId, cartaMotivacion },
+      data: { estudianteId, ofertaId, cartaMotivacion, archivoCv },
       include: { oferta: { include: { empresa: true } } },
     });
   }
@@ -41,7 +41,10 @@ export class PostulacionesService {
   async findByEstudiante(estudianteId: number) {
     return this.prisma.postulacion.findMany({
       where: { estudianteId },
-      include: { oferta: { include: { empresa: true } } },
+      include: {
+        oferta: { include: { empresa: true } },
+        practica: { select: { id: true, estado: true, titulo: true } },
+      },
       orderBy: { fechaPostulacion: 'desc' },
     });
   }

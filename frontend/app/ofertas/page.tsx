@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, Pencil, Plus, RefreshCw, Search, Trash2, Users } from 'lucide-react';
+import { Eye, Pencil, Plus, RefreshCw, Search, Send, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -50,16 +50,19 @@ export default function OfertasPage() {
   const { user } = useAuth();
   const isEmpresa = user?.rol === Rol.EMPRESA;
   const isAdmin = user?.rol === Rol.ADMIN || user?.rol === Rol.COORDINADOR;
+  const isEstudiante = user?.rol === Rol.ESTUDIANTE;
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [postulacionesOpen, setPostulacionesOpen] = useState(false);
+  const [postularOpen, setPostularOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState<Oferta | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [postularForm, setPostularForm] = useState({ cartaMotivacion: '', archivoCv: '' });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['ofertas', page, user?.rol],
@@ -82,6 +85,39 @@ export default function OfertasPage() {
         ENDPOINTS.OFERTAS.POSTULACIONES(selected!.id),
       );
       return data.data;
+    },
+  });
+
+  // Estudiante: cargar sus propias postulaciones para saber si ya postuló
+  const { data: misPostulaciones } = useQuery({
+    queryKey: ['mis-solicitudes'],
+    enabled: isEstudiante,
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ success: boolean; data: Postulacion[] }>(
+        ENDPOINTS.OFERTAS.MIS_SOLICITUDES,
+      );
+      return data.data;
+    },
+  });
+
+  const yaPostuleIds = useMemo(() => {
+    if (!misPostulaciones) return new Set<number>();
+    return new Set(misPostulaciones.map((p) => p.oferta?.id));
+  }, [misPostulaciones]);
+
+  const postularMutation = useMutation({
+    mutationFn: async ({ ofertaId, cartaMotivacion, archivoCv }: { ofertaId: number; cartaMotivacion: string; archivoCv: string }) => {
+      await apiClient.post(ENDPOINTS.OFERTAS.POSTULAR(ofertaId), { cartaMotivacion, archivoCv });
+    },
+    onSuccess: () => {
+      toast.success('¡Postulación enviada correctamente!');
+      setPostularOpen(false);
+      setPostularForm({ cartaMotivacion: '', archivoCv: '' });
+      queryClient.invalidateQueries({ queryKey: ['mis-solicitudes'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'No se pudo enviar la postulación';
+      toast.error(msg);
     },
   });
 
@@ -206,6 +242,20 @@ export default function OfertasPage() {
           >
             <Eye className="h-4 w-4" />
           </button>
+          {isEstudiante && (
+            yaPostuleIds.has(o.id) ? (
+              <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-500 text-xs font-medium">Ya postulaste</span>
+            ) : (
+              <button
+                onClick={() => { setSelected(o); setPostularForm({ cartaMotivacion: '', archivoCv: '' }); setPostularOpen(true); }}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
+                title="Postular"
+              >
+                <Send className="h-3 w-3" />
+                Postular
+              </button>
+            )
+          )}
           {(isEmpresa || isAdmin) && (
             <>
               <button
@@ -329,6 +379,59 @@ export default function OfertasPage() {
         />
       </div>
 
+      {/* Modal: Postular (ESTUDIANTE) */}
+      <Modal
+        open={postularOpen}
+        onClose={() => setPostularOpen(false)}
+        title={`Postular a: ${selected?.titulo ?? ''}`}
+        footer={
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setPostularOpen(false)} className="btn-secondary">Cancelar</button>
+            <button
+              onClick={() => selected && postularMutation.mutate({ ofertaId: selected.id, ...postularForm })}
+              disabled={postularMutation.isPending}
+              className="btn-primary"
+            >
+              {postularMutation.isPending ? 'Enviando...' : 'Enviar postulación'}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {selected && (
+            <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-sm">
+              <p className="font-semibold text-blue-800">{selected.titulo}</p>
+              <p className="text-blue-600">{selected.empresa?.razonSocial} · {modalidadLabels[selected.modalidad] ?? selected.modalidad}</p>
+              {selected.remuneracion != null && <p className="text-blue-600">Remuneración: S/ {selected.remuneracion}</p>}
+            </div>
+          )}
+          <div>
+            <label htmlFor="post-cv" className="block text-sm font-medium text-slate-700 mb-1">
+              URL de tu CV <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="post-cv"
+              type="url"
+              placeholder="https://drive.google.com/tu-cv.pdf"
+              className="input-field"
+              value={postularForm.archivoCv}
+              onChange={(e) => setPostularForm((f) => ({ ...f, archivoCv: e.target.value }))}
+            />
+            <p className="text-xs text-slate-500 mt-1">Comparte el enlace de tu CV en Google Drive, Dropbox u otro servicio.</p>
+          </div>
+          <div>
+            <label htmlFor="post-carta" className="block text-sm font-medium text-slate-700 mb-1">Carta de motivación (opcional)</label>
+            <textarea
+              id="post-carta"
+              className="input-field min-h-[100px]"
+              placeholder="Explica por qué eres el candidato ideal para esta práctica..."
+              value={postularForm.cartaMotivacion}
+              onChange={(e) => setPostularForm((f) => ({ ...f, cartaMotivacion: e.target.value }))}
+            />
+          </div>
+        </div>
+      </Modal>
+
       {/* Modal: Detalle */}
       <Modal
         open={detailOpen}
@@ -372,34 +475,51 @@ export default function OfertasPage() {
         ) : (
           <div className="space-y-3">
             {postulaciones.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    {p.estudiante?.nombres} {p.estudiante?.apellidos}
+              <div key={p.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {p.estudiante?.nombres} {p.estudiante?.apellidos}
+                    </p>
+                    <p className="text-xs text-slate-500">{formatDate(p.fechaPostulacion)}</p>
+                    {p.archivoCv && (
+                      <a
+                        href={p.archivoCv}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Ver CV
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <span className={`badge ${estadoPostulacionColors[p.estado]}`}>
+                      {estadoPostulacionLabels[p.estado]}
+                    </span>
+                    {p.estado === EstadoPostulacion.PENDIENTE && (isEmpresa || isAdmin) && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => estadoMutation.mutate({ postId: p.id, estado: EstadoPostulacion.ACEPTADA })}
+                          className="px-2 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+                        >
+                          Aceptar
+                        </button>
+                        <button
+                          onClick={() => estadoMutation.mutate({ postId: p.id, estado: EstadoPostulacion.RECHAZADA })}
+                          className="px-2 py-1 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700"
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {p.cartaMotivacion && (
+                  <p className="text-xs text-slate-600 bg-white rounded p-2 border border-slate-200 italic">
+                    &ldquo;{p.cartaMotivacion}&rdquo;
                   </p>
-                  <p className="text-xs text-slate-500">{formatDate(p.fechaPostulacion)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`badge ${estadoPostulacionColors[p.estado]}`}>
-                    {estadoPostulacionLabels[p.estado]}
-                  </span>
-                  {p.estado === EstadoPostulacion.PENDIENTE && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => estadoMutation.mutate({ postId: p.id, estado: EstadoPostulacion.ACEPTADA })}
-                        className="px-2 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
-                      >
-                        Aceptar
-                      </button>
-                      <button
-                        onClick={() => estadoMutation.mutate({ postId: p.id, estado: EstadoPostulacion.RECHAZADA })}
-                        className="px-2 py-1 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700"
-                      >
-                        Rechazar
-                      </button>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             ))}
           </div>

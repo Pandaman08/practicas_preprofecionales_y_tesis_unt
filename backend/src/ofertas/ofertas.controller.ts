@@ -37,11 +37,19 @@ export class OfertasController {
     }, user);
   }
 
-  @Get('mis-postulaciones')
+  @Get('mis-postulaciones')  // Empresa: ver postulaciones de sus ofertas
   @Roles(Rol.EMPRESA)
   @ApiOperation({ summary: 'Ver todas las postulaciones de mis ofertas' })
   misPostulaciones(@CurrentUser() user: any) {
     return this.postulacionesService.findByEmpresa(user.id);
+  }
+
+  @Get('mis-solicitudes')  // Estudiante: ver sus propias postulaciones
+  @Roles(Rol.ESTUDIANTE)
+  @ApiOperation({ summary: 'Ver mis postulaciones como estudiante' })
+  async misSolicitudes(@CurrentUser() user: any) {
+    const estudianteId = await this.postulacionesService.getEstudianteIdByUsuario(user.id);
+    return this.postulacionesService.findByEstudiante(estudianteId);
   }
 
   @Get(':id')
@@ -81,7 +89,7 @@ export class OfertasController {
     @Body() body: any,
   ) {
     const estudianteId = await this.postulacionesService.getEstudianteIdByUsuario(user.id);
-    return this.postulacionesService.postular(estudianteId, ofertaId, body.cartaMotivacion);
+    return this.postulacionesService.postular(estudianteId, ofertaId, body.cartaMotivacion, body.archivoCv);
   }
 
   @Get(':id/postulaciones')
