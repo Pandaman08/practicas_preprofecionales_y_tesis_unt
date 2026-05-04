@@ -340,8 +340,9 @@ async function main() {
 
     const estado = weightedPracticeStatus();
     const startDate = dateFromNow(randomInt(-220, -20));
+    // EN_CURSO/PENDIENTE: 60% tienen fecha de fin planificada (algunos próximos a vencer)
     const endDate = estado === EstadoPractica.EN_CURSO || estado === EstadoPractica.PENDIENTE
-      ? null
+      ? Math.random() < 0.6 ? dateFromNow(randomInt(-5, 45)) : null
       : dateFromNow(randomInt(-10, 140));
 
     const practica = await prisma.practica.create({
