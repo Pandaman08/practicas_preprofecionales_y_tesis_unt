@@ -42,7 +42,7 @@ export default function PostulacionesCoordinadorPage() {
   const canFormalize = user?.rol === Rol.ADMIN || user?.rol === Rol.COORDINADOR;
 
   const [search, setSearch] = useState('');
-  const [tabEstado, setTabEstado] = useState<TabEstado>('ACEPTADA');
+  const [tabEstado, setTabEstado] = useState<TabEstado>(EstadoPostulacion.ACEPTADA);
   const [empresaFiltro, setEmpresaFiltro] = useState('');
   const [page, setPage] = useState(1);
   const [formalizarOpen, setFormalizarOpen] = useState(false);
