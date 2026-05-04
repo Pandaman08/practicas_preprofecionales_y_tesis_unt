@@ -37,6 +37,13 @@ export class OfertasController {
     }, user);
   }
 
+  @Get('mis-postulaciones')
+  @Roles(Rol.EMPRESA)
+  @ApiOperation({ summary: 'Ver todas las postulaciones de mis ofertas' })
+  misPostulaciones(@CurrentUser() user: any) {
+    return this.postulacionesService.findByEmpresa(user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Ver detalle de oferta' })
   findOne(@Param('id', ParseIntPipe) id: number) {

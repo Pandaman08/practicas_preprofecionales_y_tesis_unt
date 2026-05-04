@@ -58,6 +58,19 @@ export class PostulacionesService {
     });
   }
 
+  async findByEmpresa(usuarioId: number) {
+    const empresa = await this.prisma.empresa.findUnique({ where: { usuarioId } });
+    if (!empresa) throw new NotFoundException('Perfil de empresa no encontrado');
+    return this.prisma.postulacion.findMany({
+      where: { oferta: { empresaId: empresa.id } },
+      include: {
+        estudiante: true,
+        oferta: { select: { id: true, titulo: true, modalidad: true } },
+      },
+      orderBy: { fechaPostulacion: 'desc' },
+    });
+  }
+
   async updateEstado(id: number, estado: EstadoPostulacion, user: { id: number; rol: Rol }) {
     const post = await this.prisma.postulacion.findUnique({
       where: { id },

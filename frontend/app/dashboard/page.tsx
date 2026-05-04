@@ -224,6 +224,8 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
   const roleQuickAccess: Record<Rol, Array<{ label: string; href: string }>> = {
     [Rol.ADMIN]: [
       { label: 'Estudiantes', href: '/estudiantes' },
+      { label: 'Asesores', href: '/asesores' },
+      { label: 'Empresas', href: '/empresas' },
       { label: 'Practicas', href: '/practicas' },
       { label: 'Tesis', href: '/tesis' },
       { label: 'Reportes', href: '/reportes' },
@@ -238,19 +240,16 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
       { label: 'Mis estudiantes', href: '/estudiantes' },
       { label: 'Practicas', href: '/practicas' },
       { label: 'Tesis', href: '/tesis' },
-      { label: 'Dashboard', href: '/dashboard' },
     ],
     [Rol.ESTUDIANTE]: [
       { label: 'Mis practicas', href: '/practicas' },
       { label: 'Mis tesis', href: '/tesis' },
-      { label: 'Ofertas', href: '/practicas' },
-      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Ofertas', href: '/ofertas' },
     ],
     [Rol.EMPRESA]: [
-      { label: 'Mi empresa', href: '/empresas' },
-      { label: 'Ofertas', href: '/practicas' },
-      { label: 'Postulaciones', href: '/practicas' },
-      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Mi empresa', href: '/empresas/mi-empresa' },
+      { label: 'Mis ofertas', href: '/ofertas' },
+      { label: 'Postulaciones', href: '/empresas/postulaciones' },
     ],
   };
 

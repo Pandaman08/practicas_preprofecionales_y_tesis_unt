@@ -29,7 +29,7 @@ export const ENDPOINTS = {
   // Empresas
   EMPRESAS: {
     BASE: '/empresas',
-    MI_EMPRESA: '/empresas/mi-empresa',
+    MI_PERFIL: '/empresas/mi-perfil',
     BY_ID: (id: number) => `/empresas/${id}`,
     CONVENIOS: (id: number) => `/empresas/${id}/convenios`,
   },
@@ -38,6 +38,7 @@ export const ENDPOINTS = {
   OFERTAS: {
     BASE: '/ofertas',
     BY_ID: (id: number) => `/ofertas/${id}`,
+    MIS_POSTULACIONES: '/ofertas/mis-postulaciones',
     POSTULAR: (id: number) => `/ofertas/${id}/postular`,
     POSTULACIONES: (id: number) => `/ofertas/${id}/postulaciones`,
     ESTADO_POSTULACION: (postId: number) => `/ofertas/postulaciones/${postId}/estado`,

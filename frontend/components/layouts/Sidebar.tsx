@@ -45,10 +45,28 @@ const navItems = [
     roles: [Rol.ADMIN, Rol.COORDINADOR],
   },
   {
+    href: '/empresas/mi-empresa',
+    label: 'Mi empresa',
+    icon: Building2,
+    roles: [Rol.EMPRESA],
+  },
+  {
+    href: '/ofertas',
+    label: 'Ofertas',
+    icon: Briefcase,
+    roles: [Rol.EMPRESA, Rol.ESTUDIANTE],
+  },
+  {
+    href: '/empresas/postulaciones',
+    label: 'Postulaciones',
+    icon: Users,
+    roles: [Rol.EMPRESA],
+  },
+  {
     href: '/practicas',
     label: 'Prácticas',
     icon: Briefcase,
-    roles: [Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.ESTUDIANTE, Rol.EMPRESA],
+    roles: [Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.ESTUDIANTE],
   },
   {
     href: '/tesis',
