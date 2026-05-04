@@ -6,6 +6,88 @@ import { EstadoPractica, Rol } from '@prisma/client';
 export class SeguimientoService {
   constructor(private prisma: PrismaService) {}
 
+  private emptyPaginatedResult(page: number, limit: number) {
+    return { data: [], total: 0, page, limit, totalPages: 0 };
+  }
+
+  private async applyPracticaRoleScope(
+    where: any,
+    currentUser?: { id: number; rol: string },
+  ): Promise<boolean> {
+    if (!currentUser) return true;
+
+    const rol = currentUser.rol as Rol;
+
+    if (rol === Rol.ADMIN || rol === Rol.COORDINADOR) {
+      return true;
+    }
+
+    if (rol === Rol.ESTUDIANTE) {
+      const estudiante = await this.prisma.estudiante.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      if (!estudiante) return false;
+      where.estudianteId = estudiante.id;
+      return true;
+    }
+
+    if (rol === Rol.ASESOR) {
+      const asesor = await this.prisma.asesor.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      if (!asesor) return false;
+      where.asesorId = asesor.id;
+      return true;
+    }
+
+    if (rol === Rol.EMPRESA) {
+      const empresa = await this.prisma.empresa.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      if (!empresa) return false;
+      where.empresaId = empresa.id;
+      return true;
+    }
+
+    return false;
+  }
+
+  private async canAccessPractica(practica: { estudianteId: number; asesorId: number | null; empresaId: number }, currentUser?: { id: number; rol: string }) {
+    if (!currentUser) return false;
+
+    const rol = currentUser.rol as Rol;
+    if (rol === Rol.ADMIN || rol === Rol.COORDINADOR) return true;
+
+    if (rol === Rol.ESTUDIANTE) {
+      const estudiante = await this.prisma.estudiante.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      return !!estudiante && practica.estudianteId === estudiante.id;
+    }
+
+    if (rol === Rol.ASESOR) {
+      const asesor = await this.prisma.asesor.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      return !!asesor && practica.asesorId === asesor.id;
+    }
+
+    if (rol === Rol.EMPRESA) {
+      const empresa = await this.prisma.empresa.findUnique({
+        where: { usuarioId: currentUser.id },
+        select: { id: true },
+      });
+      return !!empresa && practica.empresaId === empresa.id;
+    }
+
+    return false;
+  }
+
   private normalizeDateField(payload: any, field: string, label: string) {
     if (payload[field] === undefined || payload[field] === null || payload[field] === '') return;
     const parsed = new Date(payload[field]);
@@ -28,18 +110,21 @@ export class SeguimientoService {
     const { currentUser, estudianteId, empresaId, asesorId, estado, page = 1, limit = 10 } = params;
     const skip = (page - 1) * limit;
     const where: any = {};
-    if (estudianteId) where.estudianteId = estudianteId;
-    if (empresaId) where.empresaId = empresaId;
 
-    // Si el usuario es ASESOR, forzar filtro por su propio asesorId
-    if (currentUser?.rol === Rol.ASESOR) {
-      const asesor = await this.prisma.asesor.findUnique({
-        where: { usuarioId: currentUser.id },
-        select: { id: true },
-      });
-      if (asesor) where.asesorId = asesor.id;
-    } else if (asesorId) {
-      where.asesorId = asesorId;
+    const hasScope = await this.applyPracticaRoleScope(where, currentUser);
+    if (!hasScope) {
+      return this.emptyPaginatedResult(page, limit);
+    }
+
+    const canUseRoleExternalFilters =
+      !currentUser ||
+      currentUser.rol === Rol.ADMIN ||
+      currentUser.rol === Rol.COORDINADOR;
+
+    if (canUseRoleExternalFilters) {
+      if (estudianteId) where.estudianteId = estudianteId;
+      if (empresaId) where.empresaId = empresaId;
+      if (asesorId) where.asesorId = asesorId;
     }
 
     if (estado) where.estado = estado;
@@ -62,7 +147,7 @@ export class SeguimientoService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async findOnePractica(id: number) {
+  async findOnePractica(id: number, currentUser?: { id: number; rol: string }) {
     const p = await this.prisma.practica.findUnique({
       where: { id },
       include: {
@@ -73,6 +158,17 @@ export class SeguimientoService {
       },
     });
     if (!p) throw new NotFoundException(`Práctica #${id} no encontrada`);
+
+    if (currentUser) {
+      const canAccess = await this.canAccessPractica(
+        { estudianteId: p.estudianteId, asesorId: p.asesorId, empresaId: p.empresaId },
+        currentUser,
+      );
+      if (!canAccess) {
+        throw new ForbiddenException('No tiene permisos para acceder a esta práctica');
+      }
+    }
+
     return p;
   }
 
@@ -98,8 +194,8 @@ export class SeguimientoService {
     });
   }
 
-  async updatePractica(id: number, dto: any) {
-    await this.findOnePractica(id);
+  async updatePractica(id: number, dto: any, currentUser?: { id: number; rol: string }) {
+    await this.findOnePractica(id, currentUser);
     const payload = { ...dto };
     this.normalizeDateField(payload, 'fechaInicio', 'fechaInicio');
     this.normalizeDateField(payload, 'fechaFin', 'fechaFin');
@@ -107,8 +203,8 @@ export class SeguimientoService {
   }
 
   // ---- Seguimientos ----
-  async createSeguimiento(practicaId: number, dto: any) {
-    const practica = await this.findOnePractica(practicaId);
+  async createSeguimiento(practicaId: number, dto: any, currentUser?: { id: number; rol: string }) {
+    const practica = await this.findOnePractica(practicaId, currentUser);
     if (practica.estado === EstadoPractica.COMPLETADA || practica.estado === EstadoPractica.CANCELADA) {
       throw new ForbiddenException('No se puede agregar seguimiento a una práctica finalizada');
     }
@@ -130,17 +226,39 @@ export class SeguimientoService {
     return seguimiento;
   }
 
-  async findSeguimientosByPractica(practicaId: number) {
-    await this.findOnePractica(practicaId);
+  async findSeguimientosByPractica(practicaId: number, currentUser?: { id: number; rol: string }) {
+    await this.findOnePractica(practicaId, currentUser);
     return this.prisma.seguimiento.findMany({
       where: { practicaId },
       orderBy: { fecha: 'asc' },
     });
   }
 
-  async updateSeguimiento(id: number, dto: any) {
-    const seg = await this.prisma.seguimiento.findUnique({ where: { id } });
+  async updateSeguimiento(id: number, dto: any, currentUser?: { id: number; rol: string }) {
+    const seg = await this.prisma.seguimiento.findUnique({
+      where: { id },
+      include: {
+        practica: {
+          select: { estudianteId: true, asesorId: true, empresaId: true },
+        },
+      },
+    });
     if (!seg) throw new NotFoundException(`Seguimiento #${id} no encontrado`);
+
+    if (currentUser) {
+      const canAccess = await this.canAccessPractica(
+        {
+          estudianteId: seg.practica.estudianteId,
+          asesorId: seg.practica.asesorId,
+          empresaId: seg.practica.empresaId,
+        },
+        currentUser,
+      );
+      if (!canAccess) {
+        throw new ForbiddenException('No tiene permisos para modificar este seguimiento');
+      }
+    }
+
     return this.prisma.seguimiento.update({ where: { id }, data: dto });
   }
 }

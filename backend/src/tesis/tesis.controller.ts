@@ -40,49 +40,49 @@ export class TesisController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Ver detalle de tesis' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.tesisService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.tesisService.findOne(id, user);
   }
 
   @Post()
   @Roles(Rol.ESTUDIANTE, Rol.ADMIN, Rol.COORDINADOR)
   @ApiOperation({ summary: 'Registrar nueva tesis' })
-  create(@Body() body: any) {
-    return this.tesisService.create(body);
+  create(@Body() body: any, @CurrentUser() user: any) {
+    return this.tesisService.create(body, user);
   }
 
   @Put(':id')
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR, Rol.ESTUDIANTE)
   @ApiOperation({ summary: 'Actualizar tesis' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.tesisService.update(id, body);
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.tesisService.update(id, body, user);
   }
 
   // --- Avances ---
   @Get(':id/avances')
   @ApiOperation({ summary: 'Ver avances de una tesis' })
-  getAvances(@Param('id', ParseIntPipe) id: number) {
-    return this.avancesService.findByTesis(id);
+  getAvances(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.avancesService.findByTesis(id, user);
   }
 
   @Post(':id/avances')
   @Roles(Rol.ESTUDIANTE, Rol.ASESOR, Rol.ADMIN)
   @ApiOperation({ summary: 'Registrar avance de tesis' })
-  createAvance(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.avancesService.create(id, body);
+  createAvance(@Param('id', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.avancesService.create(id, body, user);
   }
 
   @Put('avances/:avanceId')
   @Roles(Rol.ESTUDIANTE, Rol.ASESOR, Rol.ADMIN)
   @ApiOperation({ summary: 'Actualizar avance' })
-  updateAvance(@Param('avanceId', ParseIntPipe) id: number, @Body() body: any) {
-    return this.avancesService.update(id, body);
+  updateAvance(@Param('avanceId', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.avancesService.update(id, body, user);
   }
 
   @Delete('avances/:avanceId')
   @Roles(Rol.ADMIN)
   @ApiOperation({ summary: 'Eliminar avance (solo ADMIN)' })
-  removeAvance(@Param('avanceId', ParseIntPipe) id: number) {
-    return this.avancesService.remove(id);
+  removeAvance(@Param('avanceId', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.avancesService.remove(id, user);
   }
 }

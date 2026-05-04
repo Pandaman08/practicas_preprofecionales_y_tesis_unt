@@ -38,8 +38,8 @@ export class SeguimientoController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Ver detalle de práctica' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOnePractica(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.service.findOnePractica(id, user);
   }
 
   @Post()
@@ -52,27 +52,27 @@ export class SeguimientoController {
   @Put(':id')
   @Roles(Rol.ADMIN, Rol.COORDINADOR, Rol.ASESOR)
   @ApiOperation({ summary: 'Actualizar práctica' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.service.updatePractica(id, body);
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.service.updatePractica(id, body, user);
   }
 
   @Get(':id/seguimientos')
   @ApiOperation({ summary: 'Ver seguimientos de una práctica' })
-  getSeguimientos(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findSeguimientosByPractica(id);
+  getSeguimientos(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.service.findSeguimientosByPractica(id, user);
   }
 
   @Post(':id/seguimientos')
   @Roles(Rol.ESTUDIANTE, Rol.ASESOR, Rol.ADMIN)
   @ApiOperation({ summary: 'Registrar seguimiento de práctica' })
-  createSeguimiento(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.service.createSeguimiento(id, body);
+  createSeguimiento(@Param('id', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.service.createSeguimiento(id, body, user);
   }
 
   @Put('seguimientos/:segId')
   @Roles(Rol.ESTUDIANTE, Rol.ASESOR, Rol.ADMIN)
   @ApiOperation({ summary: 'Actualizar seguimiento' })
-  updateSeguimiento(@Param('segId', ParseIntPipe) id: number, @Body() body: any) {
-    return this.service.updateSeguimiento(id, body);
+  updateSeguimiento(@Param('segId', ParseIntPipe) id: number, @Body() body: any, @CurrentUser() user: any) {
+    return this.service.updateSeguimiento(id, body, user);
   }
 }
