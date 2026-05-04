@@ -637,7 +637,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <section className="grid grid-cols-1 gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(210px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
+              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   title="Estudiantes"
                   value={adminAnalytics?.kpis.estudiantesTotal ?? 0}
@@ -700,11 +700,11 @@ export default function DashboardPage() {
               </section>
             )}
 
-            <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
+            <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Evolucion mensual</h3>
                 <p className="mb-3 text-xs text-slate-500">Comparativo de registros de practicas y tesis por mes.</p>
-                <div className="h-44 sm:h-52 lg:h-56">
+                <div className="h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={lineTrend} margin={{ top: 8, right: 10, left: -12, bottom: 4 }} barCategoryGap={28}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -738,7 +738,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por estado</h3>
                 <p className="mb-3 text-xs text-slate-500">Vista proporcional de estados operativos y academicos.</p>
-                <div className="h-44 sm:h-52 lg:h-56">
+                <div className="h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -765,7 +765,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por carrera</h3>
                 <p className="mb-3 text-xs text-slate-500">Concentracion de estudiantes por especialidad.</p>
-                <div className="h-44 sm:h-52 lg:h-56">
+                <div className="h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={careerDistribution} margin={{ top: 8, right: 10, left: -12, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -782,7 +782,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por empresa</h3>
                 <p className="mb-3 text-xs text-slate-500">Participacion de empresas en practicas registradas.</p>
-                <div className="h-44 sm:h-52 lg:h-56">
+                <div className="h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={companyDistribution} margin={{ top: 8, right: 10, left: -12, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -797,8 +797,8 @@ export default function DashboardPage() {
               </article>
             </section>
 
-            <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
-              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md xl:min-h-[280px]">
                 <div className="mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <h3 className="text-sm font-semibold text-slate-800">Alertas de practicas por vencer</h3>
@@ -818,7 +818,7 @@ export default function DashboardPage() {
                 )}
               </article>
 
-              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md xl:min-h-[280px]">
                 <h3 className="mb-3 text-sm font-semibold text-slate-800">Historial de acciones</h3>
                 <div className="max-h-80 space-y-2 overflow-auto pr-1">
                   {(adminAnalytics?.actionLog ?? []).map((log) => (
@@ -834,7 +834,7 @@ export default function DashboardPage() {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h3 className="mb-3 text-sm font-semibold text-slate-800">Accesos rapidos</h3>
-              <div className="grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(145px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(165px,1fr))]">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {(adminAnalytics?.quickAccess ?? []).map((item) => (
                   <Link
                     key={item.href}
