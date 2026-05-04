@@ -373,8 +373,8 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
         </article>
       </section>
 
-      <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
-        <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="grid grid-cols-1 items-stretch gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
+        <article className="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Comportamiento de indicadores</h3>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{kpis.length} KPIs</span>
@@ -437,7 +437,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">{roleInsight.title}</h3>
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">KPIs del rol</span>
@@ -445,7 +445,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
             <p className="mb-3 text-xs text-slate-500">{roleInsight.subtitle}</p>
 
             {rankedKpis.length ? (
-              <div className="max-h-[22rem] space-y-2.5 overflow-auto pr-1">
+              <div className="min-h-0 flex-1 space-y-2.5 overflow-auto pr-1">
                 {rankedKpis.map((item) => {
                   const score = getKpiRoleScore(roleInsight, item);
                   const progress = maxKpiValue > 0 ? Math.round((item.value / maxKpiValue) * 100) : 0;
