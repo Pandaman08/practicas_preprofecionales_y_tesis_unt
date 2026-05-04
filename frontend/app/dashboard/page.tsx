@@ -302,8 +302,8 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
 
   return (
     <div className="space-y-4">
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5">
+      <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-800">Tendencia del periodo</h3>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{resumen?.role}</span>
@@ -337,13 +337,13 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-7">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">KPIs clave del rol</h3>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">Top {primaryKpis.length}</span>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(210px,1fr))]">
             {primaryKpis.map((item) => {
               const deltaVsAverage = getDeltaPercent(item.value, averageKpiValue);
               const tone = getDeltaTone(deltaVsAverage);
@@ -373,13 +373,13 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
         </article>
       </section>
 
-      <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
-        <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-7">
+      <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
+        <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Comportamiento de indicadores</h3>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{kpis.length} KPIs</span>
           </div>
-          <div className="h-56">
+          <div className="h-44 sm:h-48 lg:h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: -14, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -437,7 +437,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">{roleInsight.title}</h3>
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">KPIs del rol</span>
@@ -445,7 +445,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
             <p className="mb-3 text-xs text-slate-500">{roleInsight.subtitle}</p>
 
             {rankedKpis.length ? (
-              <div className="space-y-2.5">
+              <div className="max-h-[22rem] space-y-2.5 overflow-auto pr-1">
                 {rankedKpis.map((item) => {
                   const score = getKpiRoleScore(roleInsight, item);
                   const progress = maxKpiValue > 0 ? Math.round((item.value / maxKpiValue) * 100) : 0;
@@ -478,7 +478,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
         </div>
 
         {highlights.length ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {highlights.slice(0, 6).map((item, idx) => (
               <div key={`${item}-${idx}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 {item}
@@ -492,7 +492,7 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-slate-800">Accesos rapidos</h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(145px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(165px,1fr))]">
           {quickLinks.map((item) => (
             <Link
               key={item.href + item.label}
@@ -637,7 +637,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="grid grid-cols-1 gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(210px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
                 <StatCard
                   title="Estudiantes"
                   value={adminAnalytics?.kpis.estudiantesTotal ?? 0}
@@ -700,11 +700,11 @@ export default function DashboardPage() {
               </section>
             )}
 
-            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Evolucion mensual</h3>
                 <p className="mb-3 text-xs text-slate-500">Comparativo de registros de practicas y tesis por mes.</p>
-                <div className="h-72">
+                <div className="h-44 sm:h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={lineTrend} margin={{ top: 8, right: 10, left: -12, bottom: 4 }} barCategoryGap={28}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -738,7 +738,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por estado</h3>
                 <p className="mb-3 text-xs text-slate-500">Vista proporcional de estados operativos y academicos.</p>
-                <div className="h-72">
+                <div className="h-44 sm:h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -765,7 +765,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por carrera</h3>
                 <p className="mb-3 text-xs text-slate-500">Concentracion de estudiantes por especialidad.</p>
-                <div className="h-72">
+                <div className="h-44 sm:h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={careerDistribution} margin={{ top: 8, right: 10, left: -12, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -782,7 +782,7 @@ export default function DashboardPage() {
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Distribucion por empresa</h3>
                 <p className="mb-3 text-xs text-slate-500">Participacion de empresas en practicas registradas.</p>
-                <div className="h-72">
+                <div className="h-44 sm:h-52 lg:h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={companyDistribution} margin={{ top: 8, right: 10, left: -12, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -797,7 +797,7 @@ export default function DashboardPage() {
               </article>
             </section>
 
-            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <div className="mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -820,7 +820,7 @@ export default function DashboardPage() {
 
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-3 text-sm font-semibold text-slate-800">Historial de acciones</h3>
-                <div className="max-h-72 space-y-2 overflow-auto pr-1">
+                <div className="max-h-80 space-y-2 overflow-auto pr-1">
                   {(adminAnalytics?.actionLog ?? []).map((log) => (
                     <div key={log.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm">
                       <p className="font-semibold text-slate-800">{log.modulo} · {log.accion}</p>
@@ -834,7 +834,7 @@ export default function DashboardPage() {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h3 className="mb-3 text-sm font-semibold text-slate-800">Accesos rapidos</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(auto-fit,minmax(145px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(165px,1fr))]">
                 {(adminAnalytics?.quickAccess ?? []).map((item) => (
                   <Link
                     key={item.href}
