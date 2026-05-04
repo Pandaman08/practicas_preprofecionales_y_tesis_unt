@@ -561,7 +561,7 @@ export default function DashboardPage() {
       <Header title="Dashboard" />
 
       <div className="h-[calc(100vh-73px)] overflow-hidden bg-slate-50 p-3 sm:p-4">
-        <div className="flex h-full flex-col gap-4">
+        <div className="flex h-full flex-col gap-5">
         <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white to-slate-100 px-4 py-3 shadow-sm sm:px-5 sm:py-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -629,7 +629,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <div className="min-h-0 flex-1 overflow-auto pr-1">
+            <div className="min-h-0 flex-1 space-y-5 overflow-auto pr-1">
             {loadingAdmin ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, idx) => (
@@ -637,7 +637,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   title="Estudiantes"
                   value={adminAnalytics?.kpis.estudiantesTotal ?? 0}
@@ -700,7 +700,7 @@ export default function DashboardPage() {
               </section>
             )}
 
-            <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Evolucion mensual</h3>
                 <p className="mb-3 text-xs text-slate-500">Comparativo de registros de practicas y tesis por mes.</p>
@@ -797,7 +797,7 @@ export default function DashboardPage() {
               </article>
             </section>
 
-            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md xl:min-h-[280px]">
                 <div className="mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
