@@ -34,6 +34,40 @@ import { DashboardAdminAnalytics, DashboardResumen, KpiItem, Rol, Usuario } from
 import { useAuth } from '@/lib/hooks/useAuth';
 import { formatDate } from '@/lib/utils/formatDate';
 
+function formatShortLabel(value: string, maxLength = 16) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength - 1)}…`;
+}
+
+function renderPiePercentLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: any) {
+  if (!percent || percent < 0.08) return null;
+
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+  const x = cx + radius * Math.cos((-midAngle * Math.PI) / 180);
+  const y = cy + radius * Math.sin((-midAngle * Math.PI) / 180);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={700}
+    >
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
@@ -169,7 +203,9 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
   const chartData = kpis.slice(0, 6).map((item) => ({
     key: item.key,
     name: item.label,
+    shortName: formatShortLabel(item.label, 14),
     value: item.value,
+    hint: item.hint,
   }));
 
   const kpiCardPalette = [
@@ -204,13 +240,30 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: -14, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" hide />
+                <XAxis
+                  dataKey="shortName"
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                />
                 <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="value" name="Valor" fill="#3b82f6" radius={[8, 8, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="value" name="Valor" fill="#3b82f6" radius={[8, 8, 0, 0]} maxBarSize={36}>
+                  <LabelList dataKey="value" position="top" fill="#1e3a8a" fontSize={11} fontWeight={700} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {chartData.map((item) => (
+              <div key={item.key} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                <p className="font-semibold text-slate-800">{item.name}</p>
+                <p className="mt-1 text-sm font-bold text-blue-700">{item.value}</p>
+                {item.hint ? <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{item.hint}</p> : null}
+              </div>
+            ))}
           </div>
         </article>
 
@@ -505,7 +558,16 @@ export default function DashboardPage() {
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={donutStatus} dataKey="value" nameKey="name" innerRadius={58} outerRadius={95} paddingAngle={2}>
+                      <Pie
+                        data={donutStatus}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={58}
+                        outerRadius={95}
+                        paddingAngle={2}
+                        labelLine={false}
+                        label={renderPiePercentLabel}
+                      >
                         {donutStatus.map((entry, idx) => (
                           <Cell key={`${entry.name}-${idx}`} fill={pieColors[idx % pieColors.length]} />
                         ))}
