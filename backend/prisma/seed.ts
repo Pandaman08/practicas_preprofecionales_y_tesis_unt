@@ -101,6 +101,42 @@ const offerTitles = [
   'Practicante de Seguridad Informatica',
 ];
 
+const featuredCompanyOffers = [
+  {
+    titulo: 'Practicante de Seguridad Informatica - Empresa Demo 1 SAC',
+    descripcion: 'Apoyo en monitoreo de incidentes, analisis de vulnerabilidades y buenas practicas de seguridad.',
+    requisitos: 'Conocimientos de redes, seguridad ofensiva y defensiva, y documentacion tecnica.',
+    beneficios: 'Mentoria especializada, bono por desempeno y acceso a laboratorios internos.',
+    horario: 'Lunes a Viernes 8:00 - 13:00',
+    modalidad: 'remoto',
+    vacantes: 2,
+    fechaLimite: dateFromNow(45),
+    activo: true,
+  },
+  {
+    titulo: 'Practicante de Soporte TI - Empresa Demo 1 SAC',
+    descripcion: 'Soporte funcional a usuarios, gestion de incidencias y mantenimiento preventivo de equipos.',
+    requisitos: 'Base solida en sistemas operativos, mesa de ayuda y comunicacion con usuarios.',
+    beneficios: 'Capacitaciones continuas, linea de carrera y acompanamiento tecnico.',
+    horario: 'Lunes a Viernes 14:00 - 19:00',
+    modalidad: 'hibrido',
+    vacantes: 3,
+    fechaLimite: dateFromNow(60),
+    activo: true,
+  },
+  {
+    titulo: 'Practicante de Desarrollo Backend - Empresa Demo 1 SAC',
+    descripcion: 'Desarrollo de APIs, integraciones y soporte de servicios internos del negocio.',
+    requisitos: 'Conocimiento de Node.js, bases de datos relacionales y control de versiones.',
+    beneficios: 'Proyecto real, feedback semanal y opcion de continuidad.',
+    horario: 'Horario flexible por objetivos',
+    modalidad: 'presencial',
+    vacantes: 1,
+    fechaLimite: dateFromNow(30),
+    activo: true,
+  },
+];
+
 const practiceActivities = [
   'Implementacion de modulo funcional',
   'Pruebas unitarias y de integracion',
@@ -317,7 +353,18 @@ async function main() {
 
   const ofertas = [] as Awaited<ReturnType<typeof prisma.oferta.create>>[];
   for (const empresa of empresas) {
-    const ofertasPorEmpresa = randomInt(2, 5);
+    const ofertasBase = empresa.id === empresas[0].id ? featuredCompanyOffers : [];
+    for (const baseOffer of ofertasBase) {
+      const oferta = await prisma.oferta.create({
+        data: {
+          empresaId: empresa.id,
+          ...baseOffer,
+        },
+      });
+      ofertas.push(oferta);
+    }
+
+    const ofertasPorEmpresa = empresa.id === empresas[0].id ? 0 : randomInt(2, 5);
     for (let i = 0; i < ofertasPorEmpresa; i++) {
       const fechaLimite = dateFromNow(randomInt(-90, 120));
       const activo = fechaLimite >= new Date() && Math.random() > 0.15;
@@ -369,6 +416,66 @@ async function main() {
         });
       }
     }
+  }
+
+  const featuredOffers = ofertas.filter((oferta) => oferta.empresaId === empresas[0].id).slice(0, 3);
+  const featuredStatuses: EstadoPostulacion[] = [
+    EstadoPostulacion.PENDIENTE,
+    EstadoPostulacion.ACEPTADA,
+    EstadoPostulacion.RECHAZADA,
+  ];
+
+  for (let offerIndex = 0; offerIndex < featuredOffers.length; offerIndex++) {
+    const oferta = featuredOffers[offerIndex];
+    for (let statusIndex = 0; statusIndex < featuredStatuses.length; statusIndex++) {
+      const estudiante = estudiantes[offerIndex * featuredStatuses.length + statusIndex];
+      const estado = featuredStatuses[statusIndex];
+
+      await prisma.postulacion.upsert({
+        where: {
+          estudianteId_ofertaId: {
+            estudianteId: estudiante.id,
+            ofertaId: oferta.id,
+          },
+        },
+        update: {
+          estado,
+          cartaMotivacion: 'Me interesa aportar en esta oportunidad y fortalecer mis competencias profesionales.',
+          fechaPostulacion: dateFromNow(-(statusIndex + 2 + offerIndex * 3)),
+        },
+        create: {
+          estudianteId: estudiante.id,
+          ofertaId: oferta.id,
+          estado,
+          cartaMotivacion: 'Me interesa aportar en esta oportunidad y fortalecer mis competencias profesionales.',
+          fechaPostulacion: dateFromNow(-(statusIndex + 2 + offerIndex * 3)),
+        },
+      });
+    }
+  }
+
+  acceptedPostulations.length = 0;
+  const acceptedPostulationsFromDatabase = await prisma.postulacion.findMany({
+    where: {
+      estado: EstadoPostulacion.ACEPTADA,
+    },
+    select: {
+      estudianteId: true,
+      ofertaId: true,
+      oferta: {
+        select: {
+          empresaId: true,
+        },
+      },
+    },
+  });
+
+  for (const postulacion of acceptedPostulationsFromDatabase) {
+    acceptedPostulations.push({
+      estudianteId: postulacion.estudianteId,
+      ofertaId: postulacion.ofertaId,
+      empresaId: postulacion.oferta.empresaId,
+    });
   }
 
   const practicasByStudent = new Map<number, number>();

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Briefcase, Eye, Pencil, Plus, RefreshCw, Search, Trash2, Users } from 'lucide-react';
+import { Eye, Pencil, Plus, RefreshCw, Search, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -23,6 +23,15 @@ const estadoPostulacionColors: Record<EstadoPostulacion, string> = {
   PENDIENTE: 'badge-pendiente',
   ACEPTADA: 'badge-activo',
   RECHAZADA: 'badge-inactivo',
+};
+
+const modalidadLabels: Record<string, string> = {
+  presencial: 'Presencial',
+  remoto: 'Remoto',
+  hibrido: 'Híbrida',
+  PRESENCIAL: 'Presencial',
+  REMOTO: 'Remoto',
+  HIBRIDO: 'Híbrida',
 };
 
 const emptyForm = {
@@ -161,30 +170,34 @@ export default function OfertasPage() {
   };
 
   const columns: Column<Oferta & { _count?: { postulaciones: number } }>[] = [
-    { key: 'titulo', header: 'Título', render: (o) => <span className="font-medium text-slate-800">{o.titulo}</span> },
-    { key: 'modalidad', header: 'Modalidad', render: (o) => <span className="text-sm text-slate-600">{o.modalidad}</span> },
+    { key: 'titulo', header: 'Título', render: (titulo) => <span className="font-medium text-slate-800">{titulo ?? 'Sin título'}</span> },
+    {
+      key: 'modalidad',
+      header: 'Modalidad',
+      render: (modalidad) => <span className="text-sm text-slate-600">{modalidadLabels[modalidad] ?? modalidad ?? '—'}</span>,
+    },
     ...(isEmpresa
       ? []
-      : [{ key: 'empresa' as any, header: 'Empresa', render: (o: any) => <span className="text-sm text-slate-600">{o.empresa?.razonSocial ?? '—'}</span> }]),
-    { key: 'vacantes', header: 'Vacantes', render: (o) => <span className="text-sm">{o.vacantes}</span> },
+      : [{ key: 'empresa' as any, header: 'Empresa', render: (_value: unknown, row: Oferta) => <span className="text-sm text-slate-600">{row.empresa?.razonSocial ?? '—'}</span> }]),
+    { key: 'vacantes', header: 'Vacantes', render: (vacantes) => <span className="text-sm">{vacantes ?? '—'}</span> },
     {
       key: 'activo' as any,
       header: 'Estado',
-      render: (o) => (
-        <span className={`badge ${o.activo ? 'badge-activo' : 'badge-inactivo'}`}>
-          {o.activo ? 'Activa' : 'Inactiva'}
+      render: (activo) => (
+        <span className={`badge ${activo ? 'badge-activo' : 'badge-inactivo'}`}>
+          {activo ? 'Activa' : 'Inactiva'}
         </span>
       ),
     },
     {
       key: 'fechaLimite' as any,
       header: 'Fecha límite',
-      render: (o) => <span className="text-sm text-slate-500">{o.fechaLimite ? formatDate(o.fechaLimite) : '—'}</span>,
+      render: (fechaLimite) => <span className="text-sm text-slate-500">{fechaLimite ? formatDate(fechaLimite) : '—'}</span>,
     },
     {
       key: 'actions' as any,
       header: 'Acciones',
-      render: (o) => (
+      render: (_value, o) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setSelected(o); setDetailOpen(true); }}
@@ -312,6 +325,7 @@ export default function OfertasPage() {
           total={data?.total ?? 0}
           limit={10}
           onPageChange={setPage}
+          mobileCardTitle={(row) => row.titulo}
         />
       </div>
 
