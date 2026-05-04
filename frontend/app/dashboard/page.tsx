@@ -230,8 +230,8 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+        <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Comportamiento de indicadores</h3>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{kpis.length} KPIs</span>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
               </section>
             )}
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <h3 className="mb-1 text-sm font-semibold text-slate-800">Evolucion mensual</h3>
                 <p className="mb-3 text-xs text-slate-500">Comparativo de registros de practicas y tesis por mes.</p>
@@ -614,7 +614,7 @@ export default function DashboardPage() {
               </article>
             </section>
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <div className="mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
