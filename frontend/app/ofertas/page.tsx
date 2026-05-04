@@ -306,7 +306,7 @@ export default function OfertasPage() {
         <DataTable
           columns={columns}
           data={rows}
-          isLoading={isLoading}
+          loading={isLoading}
           emptyMessage="No hay ofertas disponibles"
           page={page}
           totalPages={data?.totalPages ?? 1}
