@@ -179,7 +179,7 @@ export class DashboardService {
       this.prisma.practica.findMany({
         where: {
           estado: { in: ['EN_CURSO', 'PENDIENTE'] },
-          fechaFin: { gte: now, lte: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000) },
+          fechaFin: { gte: now, lte: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) },
         },
         include: {
           estudiante: { select: { nombres: true, apellidos: true } },
