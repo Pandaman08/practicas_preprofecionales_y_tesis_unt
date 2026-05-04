@@ -309,14 +309,15 @@ export default function OfertasPage() {
           loading={isLoading}
           emptyMessage="No hay ofertas disponibles"
           page={page}
-          totalPages={data?.totalPages ?? 1}
+          total={data?.total ?? 0}
+          limit={10}
           onPageChange={setPage}
         />
       </div>
 
       {/* Modal: Detalle */}
       <Modal
-        isOpen={detailOpen}
+        open={detailOpen}
         onClose={() => setDetailOpen(false)}
         title="Detalle de oferta"
       >
@@ -346,7 +347,7 @@ export default function OfertasPage() {
 
       {/* Modal: Postulaciones */}
       <Modal
-        isOpen={postulacionesOpen}
+        open={postulacionesOpen}
         onClose={() => setPostulacionesOpen(false)}
         title={`Postulaciones — ${selected?.titulo ?? ''}`}
       >
@@ -393,7 +394,7 @@ export default function OfertasPage() {
 
       {/* Modal: Crear */}
       <Modal
-        isOpen={createOpen}
+        open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Nueva oferta"
         footer={
@@ -414,7 +415,7 @@ export default function OfertasPage() {
 
       {/* Modal: Editar */}
       <Modal
-        isOpen={editOpen}
+        open={editOpen}
         onClose={() => setEditOpen(false)}
         title="Editar oferta"
         footer={

@@ -35,7 +35,7 @@ export default function OfertaForm({ defaultValues, ofertaId }: OfertaFormProps)
   const { data: miEmpresa } = useQuery({
     queryKey: ['mi-empresa-oferta'],
     queryFn: async () => {
-      const { data } = await apiClient.get(ENDPOINTS.EMPRESAS.MI_EMPRESA);
+      const { data } = await apiClient.get(ENDPOINTS.EMPRESAS.MI_PERFIL);
       return data.data as { id: number; razonSocial: string; ruc?: string };
     },
     enabled: isCompany,
