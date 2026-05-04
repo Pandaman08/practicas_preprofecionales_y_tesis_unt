@@ -68,6 +68,51 @@ function renderPiePercentLabel({
   );
 }
 
+function getRoleInsight(role: Rol | undefined) {
+  switch (role) {
+    case Rol.COORDINADOR:
+      return {
+        title: 'Foco de coordinacion',
+        subtitle: 'Prioriza carga academica y avance operativo general.',
+        keywords: ['postul', 'practic', 'tesis', 'estudiant', 'asesor', 'empresa'],
+      };
+    case Rol.ASESOR:
+      return {
+        title: 'Foco de asesoria',
+        subtitle: 'Destaca avance de tesistas y estado de practicas asignadas.',
+        keywords: ['avance', 'seguim', 'tesis', 'practic', 'observ', 'sustent'],
+      };
+    case Rol.ESTUDIANTE:
+      return {
+        title: 'Foco del estudiante',
+        subtitle: 'Muestra progreso personal, postulaciones y carga academica activa.',
+        keywords: ['avance', 'practic', 'tesis', 'postul', 'curso', 'complet'],
+      };
+    case Rol.EMPRESA:
+      return {
+        title: 'Foco empresarial',
+        subtitle: 'Resalta postulaciones recibidas y estado de vacantes/practicas.',
+        keywords: ['postul', 'oferta', 'practic', 'empresa', 'pendient', 'acept'],
+      };
+    default:
+      return {
+        title: 'Resumen comparativo',
+        subtitle: 'Vista relativa de indicadores del rol actual.',
+        keywords: ['kpi'],
+      };
+  }
+}
+
+function getKpiRoleScore(
+  roleInsight: ReturnType<typeof getRoleInsight>,
+  item: { key: string; name: string },
+) {
+  const target = `${item.key} ${item.name}`.toLowerCase();
+  const matchIndex = roleInsight.keywords.findIndex((keyword) => target.includes(keyword));
+  if (matchIndex === -1) return 0;
+  return roleInsight.keywords.length - matchIndex;
+}
+
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
@@ -208,6 +253,19 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
     hint: item.hint,
   }));
 
+  const roleInsight = getRoleInsight(resumen?.role);
+
+  const rankedKpis = [...chartData]
+    .sort((a, b) => {
+      const scoreA = getKpiRoleScore(roleInsight, a);
+      const scoreB = getKpiRoleScore(roleInsight, b);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return b.value - a.value;
+    })
+    .slice(0, 6);
+
+  const maxKpiValue = rankedKpis.length ? Math.max(...rankedKpis.map((item) => item.value)) : 0;
+
   const kpiCardPalette = [
     'border-blue-100 bg-gradient-to-br from-blue-50 to-white text-blue-900',
     'border-emerald-100 bg-gradient-to-br from-emerald-50 to-white text-emerald-900',
@@ -267,44 +325,79 @@ function BasicRoleDashboard({ resumen }: { resumen?: DashboardResumen }) {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-800">Tendencia del periodo</h3>
-          {trend ? (
-            <>
-              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-medium text-slate-500">{trend.label}</p>
-                <div className="mt-2 flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-3xl font-bold tracking-tight text-slate-900">{trend.current}</p>
-                    <p className="text-xs text-slate-500">Anterior: {trend.previous}</p>
+        <div className="space-y-4">
+          <article className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-800">Tendencia del periodo</h3>
+            {trend ? (
+              <>
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-medium text-slate-500">{trend.label}</p>
+                  <div className="mt-2 flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-3xl font-bold tracking-tight text-slate-900">{trend.current}</p>
+                      <p className="text-xs text-slate-500">Anterior: {trend.previous}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${trend.delta >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
+                    >
+                      {trend.delta >= 0 ? '↑' : '↓'} {Math.abs(trend.percent)}%
+                    </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${trend.delta >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
-                  >
-                    {trend.delta >= 0 ? '↑' : '↓'} {Math.abs(trend.percent)}%
-                  </span>
                 </div>
-              </div>
 
-              <div className="mt-4">
-                <p className="mb-2 text-sm font-semibold text-slate-700">Highlights</p>
-                <div className="max-h-40 space-y-2 overflow-auto pr-1">
-                  {highlights.length ? (
-                    highlights.map((item, idx) => (
-                      <div key={`${item}-${idx}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                        {item}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">Sin highlights para este periodo.</p>
-                  )}
+                <div className="mt-4">
+                  <p className="mb-2 text-sm font-semibold text-slate-700">Highlights</p>
+                  <div className="max-h-40 space-y-2 overflow-auto pr-1">
+                    {highlights.length ? (
+                      highlights.map((item, idx) => (
+                        <div key={`${item}-${idx}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                          {item}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500">Sin highlights para este periodo.</p>
+                    )}
+                  </div>
                 </div>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">No hay datos de tendencia para este rol.</p>
+            )}
+          </article>
+
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-800">{roleInsight.title}</h3>
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">KPIs del rol</span>
+            </div>
+            <p className="mb-3 text-xs text-slate-500">{roleInsight.subtitle}</p>
+
+            {rankedKpis.length ? (
+              <div className="space-y-3">
+                {rankedKpis.map((item) => {
+                  const score = getKpiRoleScore(roleInsight, item);
+                  const progress = maxKpiValue > 0 ? Math.round((item.value / maxKpiValue) * 100) : 0;
+                  return (
+                    <div key={`summary-${item.key}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800">{item.name}</p>
+                        <p className="text-sm font-bold text-blue-700">{item.value}</p>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600" style={{ width: `${progress}%` }} />
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {progress}% del valor mas alto del periodo · {score > 0 ? 'Relevancia alta para tu rol' : 'Relevancia general'}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-slate-500">No hay datos de tendencia para este rol.</p>
-          )}
-        </article>
+            ) : (
+              <p className="text-sm text-slate-500">No hay indicadores disponibles para mostrar.</p>
+            )}
+          </article>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
