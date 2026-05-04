@@ -2,9 +2,34 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
 const TOKEN_KEY = 'auth_token';
+const DEFAULT_API_BASE_URL = 'http://localhost:3001/api/v1';
+
+function resolveApiBaseUrl(rawBaseUrl?: string) {
+  if (!rawBaseUrl) {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  try {
+    const url = new URL(rawBaseUrl);
+    const normalizedPath = url.pathname.replace(/\/$/, '');
+
+    if (!normalizedPath) {
+      url.pathname = '/api/v1';
+    } else if (!normalizedPath.endsWith('/api/v1')) {
+      url.pathname = `${normalizedPath}/api/v1`;
+    }
+
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    const normalizedBaseUrl = rawBaseUrl.replace(/\/$/, '');
+    return normalizedBaseUrl.endsWith('/api/v1')
+      ? normalizedBaseUrl
+      : `${normalizedBaseUrl}/api/v1`;
+  }
+}
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+  baseURL: resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL),
   headers: {
     'Content-Type': 'application/json',
   },
