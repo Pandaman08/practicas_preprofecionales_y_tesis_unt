@@ -9,7 +9,46 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+function resolveSeedDatabaseUrl(): string | undefined {
+  const directUrl = process.env.DIRECT_URL?.trim();
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(databaseUrl);
+    const isSupabasePooler =
+      parsed.hostname.includes('pooler.supabase.com') && parsed.port === '6543';
+
+    if (isSupabasePooler && !parsed.searchParams.has('pgbouncer')) {
+      parsed.searchParams.set('pgbouncer', 'true');
+      parsed.searchParams.set('connection_limit', '1');
+    }
+
+    return parsed.toString();
+  } catch {
+    return databaseUrl;
+  }
+}
+
+const seedDatabaseUrl = resolveSeedDatabaseUrl();
+
+const prisma = new PrismaClient(
+  seedDatabaseUrl
+    ? {
+        datasources: {
+          db: {
+            url: seedDatabaseUrl,
+          },
+        },
+      }
+    : undefined,
+);
 
 const firstNames = [
   'Carlos', 'Luis', 'Maria', 'Rosa', 'Ana', 'Jose', 'Miguel', 'Jorge',
